@@ -527,7 +527,19 @@ int main (int argc, char **argv) {
 	srand(time(NULL));
 	mpz_t security_parameter;
 	mpz_init(security_parameter);
-	mpz_set_ui(security_parameter, 256);
+
+	/*
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		PLEASE READ THIS BEFORE UPDATING security_parameter
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		For small values, verification may fail.
+		You may keep values 16, ... , 256
+		For too large values (>= 512) the code takes too much time to run
+		For value 512, however it is giving output in a reasonable time.
+		For higher values, the code is not tested.
+	*/
+
+	mpz_set_ui(security_parameter, 128);
 	
 
 	/*
@@ -655,14 +667,14 @@ int main (int argc, char **argv) {
 	/*
 		SIGN STARTS
 	*/
-	mpz_t message;
 	char* msg = (char*)malloc(sizeof(char)*(1+mpz_get_ui(ret_setup.mval)));
 
-	mpz_init(message);
-	// mpz_rrandomb(message, state, mpz_get_ui(ret_setup.mval));
-	// msg = mpz_get_str(msg, 2, message);
 	for (unsigned int i = 0; i < mpz_get_ui(ret_setup.mval); i++) {
+		int b = rand()%2;
 		msg[i] = '1';
+		if (b == 0) {
+			msg[i] = '0';
+		}
 	}
 	msg[mpz_get_ui(ret_setup.mval)] = '\0';
 	printf("Message (m bits): %s\n", msg);
