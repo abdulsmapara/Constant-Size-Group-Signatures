@@ -81,8 +81,8 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	mpz_init(p_bits);
 	mpz_init(q_bits);
 
-	mpz_add_ui(p_bits, k, 1);
-	mpz_add_ui(q_bits, k, 2);
+	mpz_add_ui(p_bits, k, 2);
+	mpz_add_ui(q_bits, k, 3);
 
 	mpz_t p,q;
 
@@ -154,7 +154,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 
 	/* ******************************
 		Verify that h is a generator 
-		Run the below code only for small values
+		Uncomment the below code only for small values
 	   ******************************
 	*/
 	// if (element_cmp(h, identity) == 0) {
@@ -255,9 +255,9 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	Input: PP, MK, ID
 	0 <= ID < 2^k < p
 */
-static int num_user = 0;
+static int num_user;
 int add_user_val;
-void enroll(mpz_t userID, element_t k1, element_t k2, element_t k3) {
+void enroll(mpz_t final_sid, mpz_t userID, element_t k1, element_t k2, element_t k3) {
 	// Choose unique SID
 	/*
 		Using the following property -
@@ -300,7 +300,9 @@ void enroll(mpz_t userID, element_t k1, element_t k2, element_t k3) {
 	mpz_init(inverse);
 	assert(mpz_invert(inverse, sid, ret_setup.n));
 	gmp_printf("sid (not to be disclosed to user): %Zd\n", userID);
-	gmp_printf("DEBUG: inverse of sid+omega: %Zd\n", inverse);
+	mpz_init(final_sid);
+	mpz_set(final_sid, userID);
+	// gmp_printf("DEBUG: inverse of sid+omega: %Zd\n", inverse);
 	
 	// k1, k2, k3 = ((g^alpha)^(1/w+sid), g^sid, u^sid)
 
@@ -346,21 +348,21 @@ void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element
 		} else {
 			mpz_set_ui(msg_val, 0);
 		}
-		gmp_printf("%Zd\n", msg_val);
+		// gmp_printf("%Zd\n", msg_val);
 		element_pow_mpz(temp_pw, ret_setup.generators[i], msg_val);
 		element_mul(theta3, theta3, temp_pw);
 	}
 	element_set(val1, theta3);
 	element_pow_mpz(theta3, theta3, s);
 	element_mul(theta3, theta3, k3);
-	element_printf("theta3: %B\n", theta3);
+	// element_printf("theta3: %B\n", theta3);
 	// 04 -
 	element_t theta4;
 	element_init_G1(theta4, ret_setup.pairing);
 	element_set(theta4, ret_setup.generators[0]);
 	element_pow_mpz(theta4, theta4, s);
 	element_invert(theta4, theta4);
-	element_printf("theta4: %B\n", theta4);
+	// element_printf("theta4: %B\n", theta4);
 	// Initial signature formed
 
 	// Verify
@@ -369,14 +371,14 @@ void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element
 	element_init_GT(ver2, ret_setup.pairing);
 	element_init_GT(ver3, ret_setup.pairing);
 	element_pairing(ver1, theta3, ret_setup.generators[0]);
-	element_printf("ver1: %B\nval1:%B\n", ver1, val1);
+	// element_printf("ver1: %B\nval1:%B\n", ver1, val1);
 	element_pairing(ver2, theta4, val1);
-	element_printf("ver2: %B\n", ver2);
+	// element_printf("ver2: %B\n", ver2);
 	element_mul(ver1, ver1, ver2);
-	element_printf("ver1: %B\tver2: %B\n",ver1, ver2);
+	// element_printf("ver1: %B\tver2: %B\n",ver1, ver2);
 	element_pairing(ver3, k2, ret_setup.generators[1]);
 	// The other verification check is same as 1st verification check of key, so to unnecessary increase time complexity, it is not done again
-	element_printf("ver1-final: %B\nver3-final: %B\n",ver1, ver3);
+	// element_printf("ver1-final: %B\nver3-final: %B\n",ver1, ver3);
 
 	if (element_cmp(ver1, ver3) == 0) {
 		printf("-----------------Verification of initial signature successful------------------\n");
@@ -462,9 +464,10 @@ void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3
 
 	element_pairing(T2, sigma2, ret_setup.generators[1]);
 	element_pairing(pairing_result2, sigma3, ret_setup.generators[0]);
+	
 	element_invert(pairing_result2, pairing_result2);
 	element_mul(T2, T2, pairing_result2);
-
+	
 	element_set(val2, ret_setup.generators[2]);
 	element_t temp_pw;
 	element_init_G1(temp_pw, ret_setup.pairing);
@@ -483,8 +486,9 @@ void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3
 
 	element_pairing(pairing_result2, sigma4, val2);
 	element_invert(pairing_result2, pairing_result2);
+	
 	element_mul(T2, T2, pairing_result2);
-
+	
 	element_t T1_verify, T2_verify;
 	element_init_GT(T1_verify, ret_setup.pairing);
 	element_init_GT(T2_verify, ret_setup.pairing);
@@ -501,13 +505,29 @@ void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3
 
 
 }
+void trace(element_t sigma2, mpz_t* sids, unsigned long num_of_users) {
+	element_t sigma2_copy, val;
+	element_init_G1(sigma2_copy, ret_setup.pairing);
+	element_init_G1(val, ret_setup.pairing);
+	element_set(sigma2_copy, sigma2);
+	element_pow_mpz(sigma2_copy, sigma2_copy, ret_setup.tk);
+	for (unsigned long i = 0; i < (num_of_users); i++) {
+		element_pow_mpz(val, ret_setup.generators[0], sids[i]);
+		element_pow_mpz(val, val, ret_setup.tk);
+		if (element_cmp(val, sigma2_copy) == 0) {
+			gmp_printf("----------------------------SID %Zd traced successfully--------------------------\n", sids[i]);
+		} else {
+			gmp_printf("----------------------------SID %Zd unsuccessful in passing trace test--------------------------\n", sids[i]);
+		}
+	}
+}
 int main (int argc, char **argv) {
 // for(int j=0; j<5000;j++){
-	num_user = 1;
+	num_user = 0;
 	srand(time(NULL));
 	mpz_t security_parameter;
 	mpz_init(security_parameter);
-	mpz_set_ui(security_parameter, 16);
+	mpz_set_ui(security_parameter, 256);
 	
 
 	/*
@@ -586,13 +606,27 @@ int main (int argc, char **argv) {
 		mpz_mul_ui(limit, limit, 2);
 		mpz_add_ui(count, count, 1);
 	}
-	do {
-		mpz_urandomm(userID, state, limit);	
-	} while(mpz_cmp_ui(userID, 0) == 0 || mpz_cmp(userID, ret_setup.pval) == 0 || mpz_cmp(userID, ret_setup.qval) == 0);
+
+	// Generate users
+	unsigned long num_of_users = 10;
+	mpz_t* sids = (mpz_t*)malloc(sizeof(mpz_t)*num_of_users);
+	for (unsigned long i = 0; i < num_of_users;i++) {
+		element_t k1, k2, k3;
+		mpz_init(sids[i]);
+		do {
+			mpz_urandomm(userID, state, limit);	
+		} while(mpz_cmp_ui(userID, 0) == 0 || mpz_cmp(userID, ret_setup.pval) == 0 || mpz_cmp(userID, ret_setup.qval) == 0);
+		enroll(sids[i], userID, k1, k2, k3);
+	}
+
+	
 	
 	element_t k1, k2, k3;
-	gmp_printf("USERID - %Zd\n", userID);
-	enroll(userID, k1, k2, k3);
+	gmp_printf("------------------Demonstrating for USERID - %Zd-----------------\n", userID);
+	mpz_t sid;
+	mpz_init(sid);
+	enroll(sid, userID, k1, k2, k3);
+	
 	element_printf("K1: %B\nK2: %B\nK3: %B\n", k1, k2, k3);
 
 	element_t val1, val2, val3, val4;
@@ -650,8 +684,15 @@ int main (int argc, char **argv) {
 	/*
 		VERIFY ENDS
 	*/
-// }
-	
+
+	/*
+		TRACE STARTS
+	*/
+	trace(sigma2, sids, num_of_users);
+	/*
+		TRACE ENDS
+	*/
+
 	return 0;
 
 }
