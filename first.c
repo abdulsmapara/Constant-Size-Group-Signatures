@@ -221,7 +221,14 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	gmp_randstate_t state;
 	gmp_randinit_default(state);
 	gmp_randseed_ui(state, (rand()+1)*(rand()+1));
-	mpz_urandomm(alpha, state, n);
+	mpz_t gcd_alpha_p, gcd_alpha_q;
+	mpz_init(gcd_alpha_p);
+	mpz_init(gcd_alpha_q);
+	do{
+		mpz_urandomm(alpha, state, n);
+		mpz_gcd(gcd_alpha_p, alpha, p);
+		mpz_gcd(gcd_alpha_q, alpha, q);
+	} while(mpz_cmp_ui(gcd_alpha_p, 1) != 0 || mpz_cmp_ui(gcd_alpha_q, 1) != 0);
 	mpz_urandomm(omega, state, n);
 	mpz_init(retval->omega);
 	mpz_set(retval->omega, omega);
@@ -282,16 +289,19 @@ void enroll(mpz_t userID, element_t k1, element_t k2, element_t k3) {
 		mpz_add(sid, userID, ret_setup.omega);
 		mpz_mod(sid, sid, ret_setup.n);
 		mpz_gcd(gcd, sid, ret_setup.n);
+		num_user+=1;
 		if (mpz_cmp_ui(gcd, 1) == 0) {
 			break;
 		}
-		num_user+=1;
+		
 		mpz_add_ui(userID, val, num_user);
 	}
 	mpz_t inverse;
 	mpz_init(inverse);
 	assert(mpz_invert(inverse, sid, ret_setup.n));
-	gmp_printf("sid (not to be disclosed to user): %Zd\n", sid);
+	gmp_printf("sid (not to be disclosed to user): %Zd\n", userID);
+	gmp_printf("DEBUG: inverse of sid+omega: %Zd\n", inverse);
+	
 	// k1, k2, k3 = ((g^alpha)^(1/w+sid), g^sid, u^sid)
 
 	element_init_G1(k1, ret_setup.pairing);
@@ -326,21 +336,31 @@ void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element
 	element_init_G1(theta3, ret_setup.pairing);
 	element_init_G1(val1, ret_setup.pairing);
 	element_set(theta3, ret_setup.generators[2]);
-
+	element_t temp_pw;
+	element_init_G1(temp_pw, ret_setup.pairing);
+	mpz_t msg_val;
+	mpz_init(msg_val);
 	for (int i = 3; i < (3+mpz_get_ui(ret_setup.mval)); i++) {
-		element_mul(theta3, theta3, ret_setup.generators[i]);
+		if (message[i-3] == '1') {
+			mpz_set_ui(msg_val,1);
+		} else {
+			mpz_set_ui(msg_val, 0);
+		}
+		gmp_printf("%Zd\n", msg_val);
+		element_pow_mpz(temp_pw, ret_setup.generators[i], msg_val);
+		element_mul(theta3, theta3, temp_pw);
 	}
 	element_set(val1, theta3);
 	element_pow_mpz(theta3, theta3, s);
 	element_mul(theta3, theta3, k3);
-
+	element_printf("theta3: %B\n", theta3);
 	// 04 -
 	element_t theta4;
 	element_init_G1(theta4, ret_setup.pairing);
 	element_set(theta4, ret_setup.generators[0]);
 	element_pow_mpz(theta4, theta4, s);
 	element_invert(theta4, theta4);
-
+	element_printf("theta4: %B\n", theta4);
 	// Initial signature formed
 
 	// Verify
@@ -349,10 +369,15 @@ void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element
 	element_init_GT(ver2, ret_setup.pairing);
 	element_init_GT(ver3, ret_setup.pairing);
 	element_pairing(ver1, theta3, ret_setup.generators[0]);
+	element_printf("ver1: %B\nval1:%B\n", ver1, val1);
 	element_pairing(ver2, theta4, val1);
+	element_printf("ver2: %B\n", ver2);
 	element_mul(ver1, ver1, ver2);
+	element_printf("ver1: %B\tver2: %B\n",ver1, ver2);
 	element_pairing(ver3, k2, ret_setup.generators[1]);
 	// The other verification check is same as 1st verification check of key, so to unnecessary increase time complexity, it is not done again
+	element_printf("ver1-final: %B\nver3-final: %B\n",ver1, ver3);
+
 	if (element_cmp(ver1, ver3) == 0) {
 		printf("-----------------Verification of initial signature successful------------------\n");
 	} else {
@@ -389,6 +414,8 @@ void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element
 	element_pow_mpz(temp, h, t4);
 	element_mul(sigma4, temp, sigma4);
 
+	// gmp_printf("T = %Zd, %Zd, %Zd, %Zd\n", t1, t2, t3, t4);
+
 	element_t theta1, theta2, u;
 	element_init_G1(pi1, ret_setup.pairing);
 	element_init_G1(pi2, ret_setup.pairing);
@@ -406,21 +433,81 @@ void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element
 	element_mul(pi1, theta1, h);
 	element_mul(pi1, pi1, theta2);
 
-	element_pow_mpz(u, u, t2);
-	element_pow_mpz(pi2, ret_setup.generators[0], t3);
-	element_invert(pi2, pi2);
-	element_pow_mpz(val1, val1, t4);
+	element_pow_mpz(pi2, u, t2);
+	element_pow_mpz(u, ret_setup.generators[0], t3);
+	element_invert(u, u);
 	element_mul(pi2, pi2, u);
+	element_pow_mpz(val1, val1, t4);
 	element_mul(pi2, pi2, val1);
 
 
 	
 }
+void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3, element_t sigma4, element_t pi1, element_t pi2, char* message) {
+
+	element_t Acopy, val1, val2, pairing_result1, pairing_result2, T1, T2;
+	element_init_G1(val2, ret_setup.pairing);
+	element_init_G2(val1, ret_setup.pairing);
+	element_init_GT(Acopy, ret_setup.pairing);
+	element_init_GT(pairing_result1, ret_setup.pairing);
+	element_init_GT(pairing_result2, ret_setup.pairing);
+	element_init_GT(T1, ret_setup.pairing);
+	element_init_GT(T2, ret_setup.pairing);
+
+	element_set(Acopy, Aval);
+	element_invert(Acopy, Acopy);
+	element_mul(val1, sigma2, ret_setup.B_Omega);
+	element_pairing(pairing_result1, sigma1, val1);
+	element_mul(T1, pairing_result1, Acopy);
+
+	element_pairing(T2, sigma2, ret_setup.generators[1]);
+	element_pairing(pairing_result2, sigma3, ret_setup.generators[0]);
+	element_invert(pairing_result2, pairing_result2);
+	element_mul(T2, T2, pairing_result2);
+
+	element_set(val2, ret_setup.generators[2]);
+	element_t temp_pw;
+	element_init_G1(temp_pw, ret_setup.pairing);
+	mpz_t msg_val;
+	mpz_init(msg_val);
+	for (int i = 3; i < (3+mpz_get_ui(ret_setup.mval)); i++) {
+		if (message[i-3] == '1') {
+			mpz_set_ui(msg_val,1);
+		} else {
+			mpz_set_ui(msg_val, 0);
+		}
+		
+		element_pow_mpz(temp_pw, ret_setup.generators[i], msg_val);
+		element_mul(val2, val2, temp_pw);
+	}
+
+	element_pairing(pairing_result2, sigma4, val2);
+	element_invert(pairing_result2, pairing_result2);
+	element_mul(T2, T2, pairing_result2);
+
+	element_t T1_verify, T2_verify;
+	element_init_GT(T1_verify, ret_setup.pairing);
+	element_init_GT(T2_verify, ret_setup.pairing);
+	element_pairing(T1_verify, ret_setup.gen_subgroup_q, pi1);
+	element_pairing(T2_verify, ret_setup.gen_subgroup_q, pi2);
+	element_invert(T2_verify, T2_verify);
+	element_printf("%B\n%B\n",T2, T2_verify);
+	if (element_cmp(T1, T1_verify) == 0 && element_cmp(T2, T2_verify) == 0) {
+		printf("---------------------VERIFICATION VALID-------------------------\n");
+	} else {
+		printf("VERIFICATION INVALID\n");
+	}
+
+
+
+}
 int main (int argc, char **argv) {
+// for(int j=0; j<5000;j++){
+	num_user = 1;
 	srand(time(NULL));
 	mpz_t security_parameter;
 	mpz_init(security_parameter);
-	mpz_set_ui(security_parameter, 256);
+	mpz_set_ui(security_parameter, 16);
 	
 
 	/*
@@ -451,11 +538,11 @@ int main (int argc, char **argv) {
 	pbc_param_out_str(stdout, ret_setup.p);
 
 	// Generators
-	// printf("m+3 GENERATORS of GROUP G: ");
-	// for (unsigned long int i = 0; i < mpz_get_ui(security_parameter)+3; i++) {
-	// 	element_printf("%B,",ret_setup.generators[i]);
-	// }
-	// printf("\n");
+	printf("m+3 GENERATORS of GROUP G: ");
+	for (unsigned long int i = 0; i < mpz_get_ui(security_parameter)+3; i++) {
+		element_printf("%B,",ret_setup.generators[i]);
+	}
+	printf("\n");
 
 	// Value of A
 	element_t Aval;
@@ -501,8 +588,10 @@ int main (int argc, char **argv) {
 	}
 	do {
 		mpz_urandomm(userID, state, limit);	
-	} while(mpz_cmp_ui(userID, 0) == 0);
+	} while(mpz_cmp_ui(userID, 0) == 0 || mpz_cmp(userID, ret_setup.pval) == 0 || mpz_cmp(userID, ret_setup.qval) == 0);
+	
 	element_t k1, k2, k3;
+	gmp_printf("USERID - %Zd\n", userID);
 	enroll(userID, k1, k2, k3);
 	element_printf("K1: %B\nK2: %B\nK3: %B\n", k1, k2, k3);
 
@@ -515,7 +604,12 @@ int main (int argc, char **argv) {
 	element_pairing(val2, k3, ret_setup.generators[0]);
 	element_mul(val4, k2, ret_setup.B_Omega);
 	element_pairing(val3, k1, val4);
-
+	if (element_cmp(val1, val2) == 0) {
+		printf("SUCCESS - 1\n");
+	} 
+	if (element_cmp(val3, Aval) == 0) {
+		printf("SUCCESS - 2\n");
+	}
 	if (element_cmp(val1, val2) == 0 && element_cmp(val3, Aval) == 0) {
 		printf("--------------------Verification of key successful - key well formed by enroll()----------------------------\n");
 	} else {
@@ -531,9 +625,13 @@ int main (int argc, char **argv) {
 	char* msg = (char*)malloc(sizeof(char)*(1+mpz_get_ui(ret_setup.mval)));
 
 	mpz_init(message);
-	mpz_rrandomb(message, state, mpz_get_ui(ret_setup.mval));
-	msg = mpz_get_str(msg, 2, message);
-	printf("Message (0-m bits): %s\n", msg);
+	// mpz_rrandomb(message, state, mpz_get_ui(ret_setup.mval));
+	// msg = mpz_get_str(msg, 2, message);
+	for (unsigned int i = 0; i < mpz_get_ui(ret_setup.mval); i++) {
+		msg[i] = '1';
+	}
+	msg[mpz_get_ui(ret_setup.mval)] = '\0';
+	printf("Message (m bits): %s\n", msg);
 	element_t sigma1, sigma2, sigma3, sigma4, pi1, pi2;
 	sign(pi1, pi2,sigma1, sigma2, sigma3, sigma4, k1,k2,k3, msg);
 
@@ -542,6 +640,18 @@ int main (int argc, char **argv) {
 	/*
 		SIGN ENDS
 	*/
+
+	/*
+		VERIFY STARTS
+	*/
+
+	verify(Aval, sigma1, sigma2, sigma3, sigma4, pi1, pi2, msg);
+
+	/*
+		VERIFY ENDS
+	*/
+// }
+	
 	return 0;
 
 }
