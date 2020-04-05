@@ -1,9 +1,9 @@
 /*
 	author: @abdulsmapara
-	Paper: CSGS
+	Course: Number Theory and Modern Cryptography
+	Paper Implemented: CSGS
 */
 #include <pbc/pbc.h>
-#include <pbc/pbc_test.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -28,6 +28,7 @@ typedef struct setup_output {
 	pbc_param_t p;
 	mpz_t omega;
 	mpz_t pval, qval;
+	mpz_t mval;
 }setup_result;
 setup_result ret_setup;
 
@@ -72,6 +73,8 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	mpz_set(k, security_parameter);
 	mpz_set(m, security_parameter);
 
+	mpz_init(retval->mval);
+	mpz_set(retval->mval, m);
 	// choose p, q - random prime numbers
 	mpz_t p_bits, q_bits;
 	
@@ -226,7 +229,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	mpz_init(retval->alpha);
 	mpz_set(retval->alpha, alpha);
 
-	element_pow_mpz(g1, g1, omega);
+	element_pow_mpz(g1, generators[0], omega);
 	element_init_G1(retval->B_Omega, pairing);
 	element_set(retval->B_Omega, g1);
 
@@ -301,6 +304,38 @@ void enroll(mpz_t userID, element_t k1, element_t k2, element_t k3) {
 	element_pow_mpz(k3, ret_setup.generators[1], sid);
 
 }
+void sign(element_t k1, element_t k2, element_t k3, char* message) {
+	// CHOOSE A RANDOM s in Zn
+	mpz_t s;
+	mpz_init(s);
+	gmp_randstate_t state;
+	gmp_randinit_default(state);
+	gmp_randseed_ui(state, (rand()+1)*(rand()+1));
+	mpz_urandomm(s, state, ret_setup.n);
+	// 01 = k1
+	// 02 = k2
+	// 03 -
+	element_t theta3;
+	element_init_G1(theta3, ret_setup.pairing);
+	element_set(theta3, generators[2]);
+
+	for (int i = 3; i < (3+mpz_get_ui(ret_setup.mval)); i++) {
+		element_mul(theta3, theta3, ret_setup.generators[i]);
+	}
+	element_pow_mpz(theta3, theta3, s);
+	element_mul(theta3, theta3, k3);
+
+	// 04 -
+	element_t theta4;
+	element_init_G1(theta4, ret_setup.pairing);
+	element_set(theta4, ret_setup.generators[0]);
+	element_pow_mpz(theta4, theta4, s);
+	element_invert(theta4, theta4);
+
+	// Initial signature formed
+
+
+}
 int main (int argc, char **argv) {
 	srand(time(NULL));
 	mpz_t security_parameter;
@@ -343,12 +378,13 @@ int main (int argc, char **argv) {
 	// printf("\n");
 
 	// Value of A
-	element_t gt1;
-	element_init_GT(gt1, ret_setup.pairing);
-	element_pairing(gt1, ret_setup.generators[0], ret_setup.generators[0]);
-	element_pow_mpz(gt1, gt1, ret_setup.alpha);
+	element_t Aval;
+	element_init_GT(Aval, ret_setup.pairing);
+	element_pairing(Aval, ret_setup.generators[0], ret_setup.generators[0]);
+	element_pow_mpz(Aval, Aval, ret_setup.alpha);
 	printf("A: ");
-	element_printf("%B\n", gt1);
+
+	element_printf("%B\n", Aval);
 
 	printf("OMEGA: ");
 	element_printf("%B\n", ret_setup.B_Omega);
@@ -356,7 +392,7 @@ int main (int argc, char **argv) {
 	element_printf("%B, ",ret_setup.mk0);
 	gmp_printf("%Zd\n", ret_setup.mk1);
 	printf("TRACING KEY: ");
-	element_printf("%B\n", ret_setup.gen_subgroup_q);
+	element_printf("%B\n", q);
 	
 	/*
 		SETUP ends
@@ -389,5 +425,36 @@ int main (int argc, char **argv) {
 	element_t k1, k2, k3;
 	enroll(userID, k1, k2, k3);
 	element_printf("K1: %B\nK2: %B\nK3: %B\n", k1, k2, k3);
+
+	element_t val1, val2, val3;
+	element_init_GT(val1, ret_setup.pairing);
+	element_init_GT(val2, ret_setup.pairing);
+	element_init_GT(val3, ret_setup.pairing);
+	element_pairing(val1, k2, ret_setup.generators[1]);
+	element_pairing(val2, k3, ret_setup.generators[0]);
+	element_pairing(val3, k1, k2);
+
+	if (element_cmp(val1, val2) == 0 && element_cmp(val3, Aval) == 0) {
+		printf("Verification successful - key well formed by enroll()\n");
+	} else {
+		printf("Verification UNSUCCESSFUL - key not well formed by enroll()\n");
+	}
+	/*
+		ENROLL ends
+	*/
+	/*
+		SIGN STARTS
+	*/
+	mpz_t message;
+	char* msg = (char*)malloc(sizeof(char)*mpz_get_ui(ret_setup.mval));
+
+	mpz_init(message);
+	mpz_rrandomb(message, state, mpz_get_ui(ret_setup.mval));
+	msg = mpz_get_str(msg, 2, message);
+	printf("Message (0-m bits): %s\n", msg);
+
+	sign(k1,k2,k3, msg);
+
+	return 0;
 
 }
