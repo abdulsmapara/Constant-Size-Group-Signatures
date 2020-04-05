@@ -300,14 +300,21 @@ void enroll(mpz_t userID, element_t k1, element_t k2, element_t k3) {
 	element_pow_mpz(k1, ret_setup.generators[0], ret_setup.alpha);
 	element_pow_mpz(k1, k1, inverse);
 
-	element_pow_mpz(k2, ret_setup.generators[0], sid);
-	element_pow_mpz(k3, ret_setup.generators[1], sid);
+	element_pow_mpz(k2, ret_setup.generators[0], userID);
+	element_pow_mpz(k3, ret_setup.generators[1], userID);
 
 }
-void sign(element_t k1, element_t k2, element_t k3, char* message) {
+void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element_t sigma3,element_t sigma4, element_t k1, element_t k2, element_t k3, char* message) {
 	// CHOOSE A RANDOM s in Zn
-	mpz_t s;
+	mpz_t s, t1, t2, t3, t4, t_temp;
+	
 	mpz_init(s);
+	mpz_init(t1);
+	mpz_init(t2);
+	mpz_init(t3);
+	mpz_init(t4);
+	mpz_init(t_temp);
+
 	gmp_randstate_t state;
 	gmp_randinit_default(state);
 	gmp_randseed_ui(state, (rand()+1)*(rand()+1));
@@ -315,13 +322,15 @@ void sign(element_t k1, element_t k2, element_t k3, char* message) {
 	// 01 = k1
 	// 02 = k2
 	// 03 -
-	element_t theta3;
+	element_t theta3, val1;
 	element_init_G1(theta3, ret_setup.pairing);
-	element_set(theta3, generators[2]);
+	element_init_G1(val1, ret_setup.pairing);
+	element_set(theta3, ret_setup.generators[2]);
 
 	for (int i = 3; i < (3+mpz_get_ui(ret_setup.mval)); i++) {
 		element_mul(theta3, theta3, ret_setup.generators[i]);
 	}
+	element_set(val1, theta3);
 	element_pow_mpz(theta3, theta3, s);
 	element_mul(theta3, theta3, k3);
 
@@ -334,7 +343,78 @@ void sign(element_t k1, element_t k2, element_t k3, char* message) {
 
 	// Initial signature formed
 
+	// Verify
+	element_t ver1, ver2, ver3;
+	element_init_GT(ver1, ret_setup.pairing);
+	element_init_GT(ver2, ret_setup.pairing);
+	element_init_GT(ver3, ret_setup.pairing);
+	element_pairing(ver1, theta3, ret_setup.generators[0]);
+	element_pairing(ver2, theta4, val1);
+	element_mul(ver1, ver1, ver2);
+	element_pairing(ver3, k2, ret_setup.generators[1]);
+	// The other verification check is same as 1st verification check of key, so to unnecessary increase time complexity, it is not done again
+	if (element_cmp(ver1, ver3) == 0) {
+		printf("-----------------Verification of initial signature successful------------------\n");
+	} else {
+		printf("Verification of initial signature UNSUCCESSFUL\n");
+	}
+	mpz_urandomm(t1, state, ret_setup.n);
+	mpz_urandomm(t2, state, ret_setup.n);
+	mpz_urandomm(t3, state, ret_setup.n);
+	mpz_urandomm(t4, state, ret_setup.n);
+	element_t h, temp;
+	element_init_G1(sigma1, ret_setup.pairing);
+	element_init_G1(sigma2, ret_setup.pairing);
+	element_init_G1(sigma3, ret_setup.pairing);
+	element_init_G1(sigma4, ret_setup.pairing);
+	element_init_G1(h, ret_setup.pairing);
+	element_init_G1(temp, ret_setup.pairing);
 
+	element_set(h, ret_setup.gen_subgroup_q);
+
+	element_set(sigma1, k1);
+	element_set(sigma2, k2);
+	element_set(sigma3, theta3);
+	element_set(sigma4, theta4);
+
+	element_pow_mpz(temp, h, t1);
+	element_mul(sigma1, temp, sigma1);
+
+	element_pow_mpz(temp, h, t2);
+	element_mul(sigma2, temp, sigma2);
+	
+	element_pow_mpz(temp, h, t3);
+	element_mul(sigma3, temp, sigma3);
+	
+	element_pow_mpz(temp, h, t4);
+	element_mul(sigma4, temp, sigma4);
+
+	element_t theta1, theta2, u;
+	element_init_G1(pi1, ret_setup.pairing);
+	element_init_G1(pi2, ret_setup.pairing);
+	element_init_G1(theta1, ret_setup.pairing);
+	element_init_G1(theta2, ret_setup.pairing);
+	element_init_G1(u, ret_setup.pairing);
+	element_set(theta1, k1);
+	element_set(theta2, k2);
+	element_set(u, ret_setup.generators[1]);
+	mpz_mul(t_temp, t1, t2);
+	element_pow_mpz(h, h, t_temp);
+	element_pow_mpz(theta1, theta1,t2);
+	element_mul(theta2, theta2, ret_setup.B_Omega);
+	element_pow_mpz(theta2, theta2, t1);
+	element_mul(pi1, theta1, h);
+	element_mul(pi1, pi1, theta2);
+
+	element_pow_mpz(u, u, t2);
+	element_pow_mpz(pi2, ret_setup.generators[0], t3);
+	element_invert(pi2, pi2);
+	element_pow_mpz(val1, val1, t4);
+	element_mul(pi2, pi2, u);
+	element_mul(pi2, pi2, val1);
+
+
+	
 }
 int main (int argc, char **argv) {
 	srand(time(NULL));
@@ -392,7 +472,7 @@ int main (int argc, char **argv) {
 	element_printf("%B, ",ret_setup.mk0);
 	gmp_printf("%Zd\n", ret_setup.mk1);
 	printf("TRACING KEY: ");
-	element_printf("%B\n", q);
+	gmp_printf("%Zd\n", ret_setup.qval);
 	
 	/*
 		SETUP ends
@@ -426,18 +506,20 @@ int main (int argc, char **argv) {
 	enroll(userID, k1, k2, k3);
 	element_printf("K1: %B\nK2: %B\nK3: %B\n", k1, k2, k3);
 
-	element_t val1, val2, val3;
+	element_t val1, val2, val3, val4;
 	element_init_GT(val1, ret_setup.pairing);
 	element_init_GT(val2, ret_setup.pairing);
 	element_init_GT(val3, ret_setup.pairing);
+	element_init_G2(val4, ret_setup.pairing);
 	element_pairing(val1, k2, ret_setup.generators[1]);
 	element_pairing(val2, k3, ret_setup.generators[0]);
-	element_pairing(val3, k1, k2);
+	element_mul(val4, k2, ret_setup.B_Omega);
+	element_pairing(val3, k1, val4);
 
 	if (element_cmp(val1, val2) == 0 && element_cmp(val3, Aval) == 0) {
-		printf("Verification successful - key well formed by enroll()\n");
+		printf("--------------------Verification of key successful - key well formed by enroll()----------------------------\n");
 	} else {
-		printf("Verification UNSUCCESSFUL - key not well formed by enroll()\n");
+		printf("Verification of key UNSUCCESSFUL - key not well formed by enroll()\n");
 	}
 	/*
 		ENROLL ends
@@ -446,15 +528,20 @@ int main (int argc, char **argv) {
 		SIGN STARTS
 	*/
 	mpz_t message;
-	char* msg = (char*)malloc(sizeof(char)*mpz_get_ui(ret_setup.mval));
+	char* msg = (char*)malloc(sizeof(char)*(1+mpz_get_ui(ret_setup.mval)));
 
 	mpz_init(message);
 	mpz_rrandomb(message, state, mpz_get_ui(ret_setup.mval));
 	msg = mpz_get_str(msg, 2, message);
 	printf("Message (0-m bits): %s\n", msg);
+	element_t sigma1, sigma2, sigma3, sigma4, pi1, pi2;
+	sign(pi1, pi2,sigma1, sigma2, sigma3, sigma4, k1,k2,k3, msg);
 
-	sign(k1,k2,k3, msg);
 
+	element_printf("Final Signature:\nSigma1: %B\nSigma2: %B\nSigma3: %B\nSigma4: %B\nPi1: %B\nPi2: %B\n",sigma1, sigma2, sigma3, sigma4, pi1, pi2);
+	/*
+		SIGN ENDS
+	*/
 	return 0;
 
 }
