@@ -389,6 +389,11 @@ void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element
 	mpz_urandomm(t2, state, ret_setup.n);
 	mpz_urandomm(t3, state, ret_setup.n);
 	mpz_urandomm(t4, state, ret_setup.n);
+
+	#ifdef DEBUG
+		gmp_printf("t1, t2, t3, t4, s: %Zd, %Zd, %Zd, %Zd, %Zd\n", t1, t2, t3, t4, s);
+	#endif
+
 	element_t h, temp;
 	element_init_G1(sigma1, ret_setup.pairing);
 	element_init_G1(sigma2, ret_setup.pairing);
@@ -449,7 +454,7 @@ void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3
 
 	element_t Acopy, val1, val2, pairing_result1, pairing_result2, T1, T2;
 	element_init_G1(val2, ret_setup.pairing);
-	element_init_G2(val1, ret_setup.pairing);
+	element_init_G1(val1, ret_setup.pairing);
 	element_init_GT(Acopy, ret_setup.pairing);
 	element_init_GT(pairing_result1, ret_setup.pairing);
 	element_init_GT(pairing_result2, ret_setup.pairing);
@@ -459,14 +464,10 @@ void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3
 	element_set(Acopy, Aval);
 	element_invert(Acopy, Acopy);
 	element_mul(val1, sigma2, ret_setup.B_Omega);
-	element_pairing(pairing_result1, sigma1, val1);
-	element_mul(T1, pairing_result1, Acopy);
+	element_pairing(T1, sigma1, val1);
+	element_mul(T1, T1, Acopy);
 
-	element_pairing(T2, sigma2, ret_setup.generators[1]);
-	element_pairing(pairing_result2, sigma3, ret_setup.generators[0]);
 	
-	element_invert(pairing_result2, pairing_result2);
-	element_mul(T2, T2, pairing_result2);
 	
 	element_set(val2, ret_setup.generators[2]);
 	element_t temp_pw;
@@ -483,7 +484,14 @@ void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3
 		element_pow_mpz(temp_pw, ret_setup.generators[i], msg_val);
 		element_mul(val2, val2, temp_pw);
 	}
-
+	#ifdef DEBUG
+		element_printf("sigma4 %B\n", sigma4);
+	#endif
+	element_pairing(T2, sigma2, ret_setup.generators[1]);
+	element_pairing(pairing_result2, sigma3, ret_setup.generators[0]);
+	
+	element_invert(pairing_result2, pairing_result2);
+	element_mul(T2, T2, pairing_result2);
 	element_pairing(pairing_result2, sigma4, val2);
 	element_invert(pairing_result2, pairing_result2);
 	
@@ -494,7 +502,7 @@ void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3
 	element_init_GT(T2_verify, ret_setup.pairing);
 	element_pairing(T1_verify, ret_setup.gen_subgroup_q, pi1);
 	element_pairing(T2_verify, ret_setup.gen_subgroup_q, pi2);
-	element_invert(T2_verify, T2_verify);
+
 	element_printf("%B\n%B\n",T2, T2_verify);
 	if (element_cmp(T1, T1_verify) == 0 && element_cmp(T2, T2_verify) == 0) {
 		printf("---------------------VERIFICATION VALID-------------------------\n");
@@ -531,15 +539,12 @@ int main (int argc, char **argv) {
 	/*
 		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		PLEASE READ THIS BEFORE UPDATING security_parameter
-		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		For small values, verification may fail.
-		You may keep values 16, ... , 256
-		For too large values (>= 512) the code takes too much time to run
-		For value 512, however it is giving output in a reasonable time.
-		For higher values, the code is not tested.
+		For small values, verification may fail. (as pairing returns 0,0 sometimes for small values of security_parameter like 3,4)
+		You may keep values 16, ... 128, 256, 512
+		Number of bits in p & q is greater than the security_parameter
 	*/
 
-	mpz_set_ui(security_parameter, 128);
+	mpz_set_ui(security_parameter, 256);
 	
 
 	/*
@@ -642,20 +647,22 @@ int main (int argc, char **argv) {
 	element_printf("K1: %B\nK2: %B\nK3: %B\n", k1, k2, k3);
 
 	element_t val1, val2, val3, val4;
+	element_init_G1(val4, ret_setup.pairing);
 	element_init_GT(val1, ret_setup.pairing);
 	element_init_GT(val2, ret_setup.pairing);
 	element_init_GT(val3, ret_setup.pairing);
-	element_init_G2(val4, ret_setup.pairing);
 	element_pairing(val1, k2, ret_setup.generators[1]);
 	element_pairing(val2, k3, ret_setup.generators[0]);
 	element_mul(val4, k2, ret_setup.B_Omega);
 	element_pairing(val3, k1, val4);
-	if (element_cmp(val1, val2) == 0) {
-		printf("SUCCESS - 1\n");
-	} 
-	if (element_cmp(val3, Aval) == 0) {
-		printf("SUCCESS - 2\n");
-	}
+	#ifdef DEBUG
+		if (element_cmp(val1, val2) == 0) {
+			printf("SUCCESS - 1\n");
+		} 
+		if (element_cmp(val3, Aval) == 0) {
+			printf("SUCCESS - 2\n");
+		}
+	#endif
 	if (element_cmp(val1, val2) == 0 && element_cmp(val3, Aval) == 0) {
 		printf("--------------------Verification of key successful - key well formed by enroll()----------------------------\n");
 	} else {
