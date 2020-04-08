@@ -170,13 +170,15 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	// mpz_t count;
 	// mpz_init(count);
 	// mpz_set_ui(count, 1);
+
+	// element_printf("h = %B\n", h);
 	// while(element_cmp(h, identity) != 0) {
 	// 	element_add(h, h, add);
 	// 	element_printf("h generates %B\n", h);
 	// 	mpz_add_ui(count, count, 1);
 	// }
 	// if (mpz_cmp(count, q) == 0) {
-	// 	printf("h is a generator of Gq\n");
+	// 	printf("----------------------------h is a generator of Gq--------------------------\n");
 	// } else {
 	// 	printf("h is not a generator of Gq\n");
 	// 	return;
@@ -538,7 +540,7 @@ int main (int argc, char **argv) {
 		Number of bits in p & q is greater than the security_parameter
 	*/
 
-	mpz_set_ui(security_parameter, 256);
+	mpz_set_ui(security_parameter, 512);
 	
 
 	/*
@@ -563,7 +565,7 @@ int main (int argc, char **argv) {
 	// }while(element_cmp(grp, ret_setup.identity));
 	// printf("\n");
 	/*
-		End for printing security_parameter
+		End for printing group
 	*/
 	printf("FOR e and GT, the pairing parameters are as follows:\n");
 	pbc_param_out_str(stdout, ret_setup.p);
