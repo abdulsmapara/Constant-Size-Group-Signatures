@@ -214,6 +214,10 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 			else:
 				rop = power(base, exp)
 		*/
+		/*
+		[REF-30] unsigned long int mpz_get_ui (const mpz t op)
+			Provided by gmp library, it returns the value of op as an unsigned long.
+		*/
 		mpz_ui_pow_ui(lower_limit, 2, mpz_get_ui(n)-1);
 		// Loop till we find a prime number of n bits
 		while (1){
@@ -257,9 +261,22 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 }
 
 void helper_setup() {
+	// The public information consists of the bilinear group, (n, G, GT , e), and a few public values.
+	// Display those to the user.
 	printf("PUBLIC INFORMATION:\n");
+	// Print the value of n to console
 	gmp_printf("N: %Zd\n", ret_setup.n);
+	/*
+		We print the group in the following way (using generator)-
+		- Pick up the generator and store it in grp
+		- Set add = generator
+		- Print grp
+		- Compute grp = grp <operator> add // Refer [REF-33] for explanation on how grp <operator> add is computed (using element_add).
+		- If grp is identity, print and break
+		- Else, print and continue 
+	*/
 	printf("G: ");
+	// Declare, initialize and set some variables used for printing group G
 	element_t grp, add;
 	element_init_G1(grp, ret_setup.pairing);
 	element_init_G1(add, ret_setup.pairing);
@@ -271,42 +288,66 @@ void helper_setup() {
 	*/
 	// do {
 	// 	element_printf("%B, ",grp);
-	// 	element_add(grp, grp, add);
+	// 	element_add(grp, grp, add); // element_add explained in [REF-33]
 	// }while(element_cmp(grp, ret_setup.identity));
 	// printf("\n");
 	/*
 		End for printing group
 	*/
+	// Print the pairing parameters for e and GT.
+	// e is the bilinear map, which can be accessed using the function element_pairing()
 	printf("FOR e and GT, the pairing parameters are as follows:\n");
+	/*
+	[REF-34] void pbc_param_out_str(FILE *stream, pbc_param_t p)
+		Provided by pbc library, it is used to write pairing parameters to 'stream' in a text format. To print on console, we provide stream = stdout.
+	*/
 	pbc_param_out_str(stdout, ret_setup.p);
+	// Can print GT using one of its generators also.
 
-	// Print Generators, uncomment the below code for printing the 1+m+2 generators
+	/* 
+		Print Generators of G using generators array
+		Uncomment the below code for printing the 1+m+2 generators
+	*/
 	// printf("m+3 GENERATORS of GROUP G: ");
 	// for (unsigned long int i = 0; i < mpz_get_ui(security_parameter)+3; i++) {
 	// 	element_printf("%B,",ret_setup.generators[i]);
 	// }
 	// printf("\n");
+	/*
+		Done printing of generators of G
+	*/
 
-	// Value of A
+	// Next, we compute A = e(g, g)^α ∈ GT
+	// Declare variable for storing value of A and initialize with pairing (type-A1-gen computed and store earlier)
 	element_t Aval;
 	element_init_GT(Aval, ret_setup.pairing);
-	element_pairing(Aval, ret_setup.generators[0], ret_setup.generators[0]);
-	element_pow_mpz(Aval, Aval, ret_setup.alpha);
+	// To compute e(g,g) i.e to map g,g from G1,G1 respectively to an element in GT, we use the following function element_pairing
+	/*
+	[REF-35] void element_pairing(element_t out, element_t in1, element_t in2)
+		Provided by pbc library, it computes a pairing: out = e(in1, in2), where in1, in2, out must be in the groups G1, G2, GT. (In our case, G1=G2)
+	*/
+	element_pairing(Aval, ret_setup.generators[0], ret_setup.generators[0]);// Currently, Aval = e(g,g)
+	element_pow_mpz(Aval, Aval, ret_setup.alpha); // Set Aval = e(g,g) ^ alpha
 	printf("A: ");
 
+	// Set value of A computed in ret_setup
 	element_set(ret_setup.Aval, Aval);
 
+	// Print value of A (part of public values) to console (element_printf explained in [REF-29])
 	element_printf("%B\n", Aval);
 	element_printf("%B\n", ret_setup.Aval);
 
+	// Print remaining values - B_Omega (part of public values), master key and tracing key
 	printf("OMEGA: ");
-	element_printf("%B\n", ret_setup.B_Omega);
+	element_printf("%B\n", ret_setup.B_Omega); // element_printf explained in [REF-29]
 	printf("MASTER KEY: ");
-	element_printf("%B, ",ret_setup.mk0);
+	element_printf("%B, ",ret_setup.mk0); // element_printf explained in [REF-29]
 	gmp_printf("%Zd\n", ret_setup.mk1);
 	printf("TRACING KEY: ");
-	gmp_printf("%Zd\n", ret_setup.qval);
+	gmp_printf("%Zd\n", ret_setup.qval);// element_printf explained in [REF-29]
 	
+	// Hence, displayed the Public Information and the public values	to the console
+	// Also, displayed the Master enrollment Key, MK and the group manager's tracing key to the console.
 }
 
 /* 
@@ -465,6 +506,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	/*
 	[REF-23] void element_init_G1(element_t e, pairing_t pairing)
 		The function initializes e to be an element of the group G1 of the pairing (initialized above in the code using type A1 pairing parameters).
+		When an element is initialized it is associated with an algebraic structure, such as a particular finite field or elliptic curve group.
 	*/
 	element_init_G1(g1, pairing);
 	// Here, G1 = G2, so element_init_G1 and element_init_G2 will do exactly the same operations.
@@ -507,22 +549,60 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	*/
 	// Set G in ret_setup with g1 used here.
 	element_set(retval->G, g1);
-	
+	// Below, we select a generator h of cyclic subgroup of G of order q
+	/*
+	How to select generator h of cyclic subgroup of G of order q.
+	We use the following for selecting h -
+	From https://crypto.stanford.edu/pbc/notes/numbertheory/cyclic.html -
+	- Corollary: Euler’s Theorem (and Fermat’s Theorem). Any a belongs to Zn* (The * in Zn* stresses that we are only considering multiplication and forgetting about addition) generates a cyclic subgroup {a, a^2, ... a^d = 1} thus d|Phi(n) and hence a^Phi(n) = 1
+	- Theorem:  All subgroups of a cyclic group are cyclic. If G=<g> is a cyclic group of order n  then for each divisor d of n there exists exactly one subgroup of order d and it can be generated by a^(n/d)
+	So, we can choose some ‘a’ that belongs to G and generate the subgroup by generators- a^(n/p) = a^q and similarly a^p
+	So, we choose a random element from group G and calculate (that element)^(p) to get h (generator of subgroup of G of order q)
+	*/
 	do {
+		/*
+		[REF-27] void element_random(element_t e)
+			Function provided by pbc library, it assigns a uniformly random element to e (as e lies in a group).
+		*/
+		// Choose some random element from group G
 		element_random(g1);	
+		
+		/*
+		[REF-28] void element_pow_mpz(element_t rop, element_t e, mpz_t a)
+			Provided by pbc library
+			Computes e^a and assigns to rop. Here, e is element of group (or any other structure i.e of type element_t) and a is of type mpz_t.
+		*/
+
+		// Compute h as g1^ p
 		element_pow_mpz(h, g1, p);
+
+		// The loop makes sure that h is not identity element of group G and some other element
 	} while(element_cmp(h, identity) == 0);
 	
-	element_init_G1(retval->gen_subgroup_q, pairing);
+	// The below code sets the value of generator of subgroup of G, of order q in ret_setup to be used by other functions later on
+	element_init_G1(retval->gen_subgroup_q, pairing); /*Initialize that value in ret_setup with pairing*/
 	#ifdef DEBUG
+		/*
+		[REF-29] int element_printf(const char *format, …)
+			Provided by pbc library, it prints the element to console.
+		*/
 		element_printf("h = %B\n", h);
 	#endif
-	element_set(retval->gen_subgroup_q, h);
+	// Set h in ret_setup
+	element_set(retval->gen_subgroup_q, h); // Details on element_set available in [REF-26]
 
+	/*
+	[REF-33] void element_add(element_t n, element_t a, element_t b)
+		Provided by pbc library, it sets n = a + b
+		NOTE: For groups of points on an ellitpic curve, such as the G1 and G2 groups associated with pairings, the operation - addition and multiplication represent the group operation.
+		Hence, we can use element_add to compute a <operation> b, where a and b are elements of group
+	*/
 	/* ******************************
-		Verify that h is a generator 
+		Verify that h is a generator (for small values)
 		Uncomment the below code only for small values
 	   ******************************
+	   Here, we start with h, and compute h = h operator h, till h becomes identity element.
+	   We keep the count of number of steps required for h to become identity element i.e we store the order of h. If order of h == q, then h is a generator of subgroup of G order q.
 	*/
 	// if (element_cmp(h, identity) == 0) {
 	// 	printf("h is not a generator of group Gq\n");
@@ -537,7 +617,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 
 	// element_printf("h = %B\n", h);
 	// while(element_cmp(h, identity) != 0) {
-	// 	element_add(h, h, add);
+	// 	element_add(h, h, add);	// element_add explained in [REF-33]
 	// 	element_printf("h generates %B\n", h);
 	// 	mpz_add_ui(count, count, 1);
 	// }
@@ -553,73 +633,142 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 		Verification Done for H is a generator
 		*****************************
 	*/
+
+	// Below we choose m+3 generators of group G - one is g and other m+2 generators.
 	mpz_t required, gen;
 	mpz_init(required);
 	mpz_init(gen);
-	mpz_add_ui(required, m,3);
-	element_t* generators = (element_t*)malloc(sizeof(element_t)*(3+mpz_get_ui(m)));
+	/*Set required number of generators to m + 3 */
+	mpz_add_ui(required, m,3); // For details on mpz_add_ui, refer [REF-10]
+
+	// Declare array of size m+3 to store all generators of group G
+	element_t* generators = (element_t*)malloc(sizeof(element_t)*(3+mpz_get_ui(m))); // mpz_get_ui explained in [REF-30]
 	
-	for (unsigned long int i = 0; i < (3+mpz_get_ui(m)); i++) {
+	// Initialize all generators with pairing (as all generators are also elements of a group)
+	for (unsigned long int i = 0; i < (3+mpz_get_ui(m)); i++) { // mpz_get_ui explained in [REF-30]
 		element_init_G1(generators[i], pairing);
 	}
-	unsigned long long int index = 0;
-	// Choosing m+3 (one generator g and m+2 others) generator for G
-	do {
-		element_random(g1);
-		element_pow_mpz(temp, g1, n);
 
+	unsigned long long int index = 0;
+	// Choosing m+3 (one generator g and m+2 others) generators for G by the following method -
+	/*	To select a generator g from G, we use the following trick -
+		- Select a random element, say ‘r’ from G
+		- Check if r^n is identity element or not
+		- If not, choose random element again and continue
+		- If r^(n) is identity element, then proceed
+		- If r^p is not identity element and r^q is not identity element, then r is the generator
+		- Else, not. We repeat the process from selecting the random element
+		This trick will work-
+		- Since p and q are primes, and n = p*q, n has only 2 factors p and q.
+		- We need to show that the order of r is n i.e from r^1 to r^n, only r^n is an identity element.If r^n is an identity element, only then r can be a generator. So, let r^n be an identity element. We know that things get repeated after generating an identity element. So, if there is some x, such that r^x = identity element, then n should be a multiple of x. Since, p and q are only factors of n, and we check r^p is not an identity element and r^q is not an identity element, we can argue that there is no x such that r^x = identity element and x != n.
+	*/
+	do {
+		// Choose a random element from G
+		element_random(g1);	// element_random explained in [REF-27]
+		// Compute random element power n
+		element_pow_mpz(temp, g1, n); // element_pow_mpz explained in [REF-28]
+
+		// Compare random element power n with identity, if matched then proceed, else discard
 		if (element_cmp(temp, identity) == 0) {
+			// Compute random element power p
 			element_pow_mpz(temp, g1, p);
+			// Check if random element power p equals identity. If equals, discard, else proceed
 			if (element_cmp(temp, identity)) {
+				// Compute random element power q
 				element_pow_mpz(temp, g1, q);
+				// Check if random element power q equals identity. If equals, discard, else proceed
 				if (element_cmp(temp, identity)) {
+					// Got a generator of G. Add to the count.
 					mpz_add_ui(gen, gen, 1);
+					// Put the generator at the next index in the array for storing generators.
 					element_set(generators[index], g1);
 					index++;
 				}
 			}
 		}
-	} while(mpz_cmp(gen, required));
+	// Loop till number of generators generated < number of generators required to be generated
+	} while(mpz_cmp(gen, required)); // mpz_cmp explained in detail in [REF-17]
 
-	retval->generators = generators;
+	retval->generators = generators; // Provide address of array to ret_setup, so that the generators of G can be used by other functions
 
-	// Pick random exponents alpha, omega from Zn
+	// Below, we pick random exponents alpha, omega from Zn (a step from implementation descried in paper)
+	// declare and initialize alpha and omega
 	mpz_t alpha, omega;
 	mpz_init(alpha);
 	mpz_init(omega);
-	gmp_randstate_t state;
-	gmp_randinit_default(state);
-	gmp_randseed_ui(state, (rand()+1)*(rand()+1));
+
+	// Using gmp library to pick a random number (in the same way as picking random no. in the function random_prime_bits)
+	gmp_randstate_t state; // gmp_randstate_t described in [REF-11]
+	gmp_randinit_default(state); // gmp_randinit_default described in [REF-12]
+	gmp_randseed_ui(state, (rand()+1)*(rand()+1)); // gmp_randseed_ui described in [REF-13]
+	
+	// Below, we make sure that alpha's gcd with p and q both is 1 i.e. alpha is relatively prime with p and q.
+	// Declare and initialize variables for storing gcd of p,q and alpha
 	mpz_t gcd_alpha_p, gcd_alpha_q;
 	mpz_init(gcd_alpha_p);
 	mpz_init(gcd_alpha_q);
+
 	do{
+		/*
+		[REF-31] void mpz_urandomm (mpz t rop, gmp randstate t state, const mpz t n)
+			Provided by gmp library, it generates a uniform random integer in the range 0 to n − 1, both included.
+		*/
+		// Choose alpha randomly between & including 0 and n-1 i.e Zn
 		mpz_urandomm(alpha, state, n);
+		/*
+		[REF-32] unsigned long int mpz_gcd_ui (mpz t rop, const mpz t op1, unsigned long int op2)
+			Provided by gmp library, it computes the greatest common divisor of op1 and op2 and stores the result obtained after computation to rop
+		*/
+		// Compute gcd of alpha, p and alpha, q
 		mpz_gcd(gcd_alpha_p, alpha, p);
 		mpz_gcd(gcd_alpha_q, alpha, q);
-	} while(mpz_cmp_ui(gcd_alpha_p, 1) != 0 || mpz_cmp_ui(gcd_alpha_q, 1) != 0);
-	mpz_urandomm(omega, state, n);
-	mpz_init(retval->omega);
-	mpz_set(retval->omega, omega);
-	gmp_printf("Alpha = %Zd\nOmega = %Zd\n", alpha, omega);
-	mpz_init(retval->alpha);
-	mpz_set(retval->alpha, alpha);
 
-	element_pow_mpz(g1, generators[0], omega);
+	// Loop till gcd(alpha, p) and gcd(alpha, q) is not 1.
+	} while(mpz_cmp_ui(gcd_alpha_p, 1) != 0 || mpz_cmp_ui(gcd_alpha_q, 1) != 0);
+
+	// Choose omega randomly between & including 0 and n-1 i.e Zn
+	mpz_urandomm(omega, state, n); // mpz_urandomm explained in [REF-31]
+
+	// Below, we set values of omega and alpha in ret_setup
+	mpz_init(retval->omega); // Initialize value of omega in ret_setup
+	mpz_set(retval->omega, omega);	// Set value of omega in ret_setup
+	gmp_printf("Alpha = %Zd\nOmega = %Zd\n", alpha, omega); // Print values of alpha and omega to console
+	mpz_init(retval->alpha);	// Initialize value of alpha in ret_setup
+	mpz_set(retval->alpha, alpha);	// Set value of alpha in ret_setup
+
+	// Next, we compute Ω = g^ω ∈ G (as directed by research paper) and set to variable B_Omega in ret_setup
+	element_pow_mpz(g1, generators[0], omega);	// element_pow_mpz explained in [REF-28] 
+	// Initialize B_Omega in ret_setup with pairing
 	element_init_G1(retval->B_Omega, pairing);
+	// Set B_Omega with g^w computed (& stored in g1)
 	element_set(retval->B_Omega, g1);
 
+	// Next, we compute the first part of master enrollment key, MK below
+	// Compute g^alpha ∈ G and store in mk0
 	element_pow_mpz(mk0, generators[0], alpha);
+	// Initialize variable mk0 that stores the first part of MK in ret_setup with pairing
 	element_init_G1(retval->mk0, pairing);
+	// Set mk0 in ret_setup with the first part of master enrollment key, MK computed above
 	element_set(retval->mk0, mk0);
 
+	// Now, we calculate second part of master enrollment key, MK below
+	// Intialize value of second part of MK in ret_setup
 	mpz_init(retval->mk1);
+	// Second part of MK = omega, so set the second part of MK to omega
 	mpz_set(retval->mk1, omega);
 
+	// Next, we compute the group manager’s tracing key, TK
+	// Initialize the value of TK in ret_setup
 	mpz_init(retval->tk);
+	// TK = q, so set the value of TK in ret_setup to q
 	mpz_set(retval->tk, q);
 
+	// Remaining operations of setup are done by the function helper_setup (written on own)
 	helper_setup();
+
+	/* 
+	The setup is complete and it stores all required values in ret_setup (so that it can be used later by other functions)
+	*/
 }
 
 /* 

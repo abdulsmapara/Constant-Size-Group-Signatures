@@ -9,7 +9,7 @@ REF-7					mpz_init()
 REF-8
 REF-9					mpz_set()
 REF-10					mpz_add_ui()
-REF-11					gmp_randstate_t()
+REF-11					gmp_randstate_t
 REF-12					gmp_randinit_default()
 REF-13					gmp_randseed_ui()
 REF-14					mpz_cmp_ui()
@@ -25,4 +25,12 @@ REF-23					element_init_G1()
 REF-24					element_init_GT()
 REF-25					element_set0()
 REF-26					element_set()
-
+REF-27					element_random()
+REF-28					element_pow_mpz()					
+REF-29					element_printf()
+REF-30					mpz_get_ui()
+REF-31					mpz_urandomm()
+REF-32					mpz_gcd()
+REF-33					element_add()
+REF-34					pbc_param_out_str()
+S
