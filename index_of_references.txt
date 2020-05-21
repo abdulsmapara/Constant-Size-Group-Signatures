@@ -1,0 +1,28 @@
+REFERENCE NUMBER	EXPLANATION OF [Function names end with ()]
+REF-1					element_t
+REF-2					mpz_t
+REF-3					pairing_t
+REF-4					pbc_param_t
+REF-5
+REF-6
+REF-7					mpz_init()
+REF-8
+REF-9					mpz_set()
+REF-10					mpz_add_ui()
+REF-11					gmp_randstate_t()
+REF-12					gmp_randinit_default()
+REF-13					gmp_randseed_ui()
+REF-14					mpz_cmp_ui()
+REF-15					mpz_ui_pow_ui()
+REF-16					mpz_urandomb()
+REF-17					mpz_cmp()
+REF-18					mpz_probab_prime_p()
+REF-19					mpz_mul()
+REF-20					gmp_printf()
+REF-21					pbc_param_init_a1_gen()
+REF-22					pairing_init_pbc_param()
+REF-23					element_init_G1()
+REF-24					element_init_GT()
+REF-25					element_set0()
+REF-26					element_set()
+
