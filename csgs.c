@@ -22,7 +22,7 @@ Short SUMMARY of the Paper:
 
 CONCEPTS explained:
 - Pairing based cryptography
-	* Cryptography with use of a pairing between elements of two cryptographic groups to a third group with a mapping e: G1*G2-> GT. (G1, G2 - elliptic curves with some parameters, GT - Algebraic group)
+	* Cryptography with use of a pairing between elements of two cryptographic groups to a third group with a mapping e: G1*G2-> GT.
 	* If G1=G2, then the pairing is called SYMMETRIC PAIRING, which is used in this program
 	* If G1 != G2, then the pairing is called ASYMMETRIC PAIRING
 - BILINEAR MAP:
@@ -261,10 +261,124 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 			/*
 			+[REF-18] int mpz_probab_prime_p (const mpz t n, int reps)
 				Function provided by gmp library to check if n is prime. Returns 2 if n is definitely prime, returns 1 if n is probably prime (without being certain), or return 0 if n is definitely composite.
-				About the argument reps: It controls how many such tests are done. Larger value of reps will reduce the chances of a composite being returned as probably prime
+				About the argument reps: It controls how many such tests are done. Larger value of reps will reduce the chances of a composite being returned as probably prime.
+
+				The function (using Rabin-Miller primality testing algorithm) is also implemented on own (without using mpz_probab_prime_p) as follows -
+				[WARNING: The below function was tested as a part of another code, not this, so please consider the function below as a part of pseudo-code instead of working-code]
 			*/
+			// typedef enum{FALSE,TRUE} boolean;
+			// boolean isPrimeUtil(mpz_t num, mpz_t base_mpz){
+
+			// 	boolean ret = FALSE;
+			// 	//to check is num is prime or not
+				
+			// 	mpz_t temp,res,count;
+			// 	mpz_t num_minus_1;
+			// 	mpz_t T;
+
+			// 	mpz_init(T);
+			// 	mpz_init(temp);
+			// 	mpz_init(res);
+			// 	mpz_init(count);
+			// 	mpz_init(num_minus_1);
+
+				
+
+			// 	mpz_set_ui(count,0);
+			// 	mpz_sub_ui(temp,num,1);
+			// 	mpz_sub_ui(num_minus_1,num,1);
+				
+			// 	mpz_mod_ui(res,temp,2);
+			// 	while(mpz_cmp_ui(res,0) == 0){
+			// 		mpz_add_ui(count,count,1);
+			// 		//temp /= 2
+			// 		mpz_div_ui(temp,temp,2);
+			// 		mpz_mod_ui(res,temp,2);
+			// 	}
+			// 	// mpz_out_str(stdout,10,temp);
+			// 	// printf("\n");
+			// 	// mpz_out_str(stdout,10,count);
+			// 	// printf("\n");
+
+			// 	//	m = temp and k = count
+			// 	mpz_powm(T,base_mpz,temp,num);
+			// 	//	T = (base_mpz ^ temp ) % NUM
+
+			// 	if((mpz_cmp_ui(T,1) == 0) || (mpz_cmp(T,num_minus_1) == 0)){
+			// 		ret = TRUE;
+			// 	}else{
+			// 		/*int i = 1;
+			// 		while(i <= count-1){
+			// 			T = (T*T)%num;
+			// 			if(T == 1){
+			// 				ret = FALSE;
+			// 				break;
+			// 			}else if (T == -1){
+			// 				ret = TRUE;
+			// 				break;
+			// 			}else{
+			// 				i = i+1;	
+			// 			}
+			// 		}*/
+			// 		mpz_t i;
+			// 		mpz_init(i);
+			// 		mpz_set_ui(i,1);
+			// 		boolean break_loop = FALSE;
+			// 		while((!break_loop) && mpz_cmp(i,count) < 0){
+			// 			mpz_powm_ui(T,T,2,num);
+			// 			if(mpz_cmp_ui(T,1) == 0){
+			// 				ret = FALSE;
+			// 				break_loop = TRUE;
+			// 			}else if(mpz_cmp(T,num_minus_1) == 0){
+			// 				ret = TRUE;
+			// 				break_loop = TRUE;
+			// 			}else{
+			// 				mpz_add_ui(i,i,1);
+			// 			}
+			// 		}
+
+			// 	}
+			// 	return ret;
+			// }
+			// boolean isPrime(mpz_t num){
+			// 	if(mpz_cmp_ui(num,2) == 0 || mpz_cmp_ui(num,3) == 0){
+			// 		return TRUE;
+			// 	}else if(mpz_cmp_ui(num,2) < 0){
+			// 		return FALSE;
+			// 	}else{
+			// 		mpz_t modulo;
+			// 		mpz_init(modulo);
+			// 		mpz_mod_ui(modulo,num,2);
+			// 		if(mpz_cmp_ui(modulo,0) == 0){
+			// 			return FALSE;
+			// 		}
+			// 	}
+			// 	mpz_t random_num;
+			// 	mpz_init(random_num);
+				
+			// 	mpz_set_ui(random_num,2);
+
+			// 	if(!isPrimeUtil(num,random_num)){
+			// 		// first checked using base 2
+			// 		return FALSE;
+			// 	}
+
+			// 	gmp_randstate_t state;
+			// 	gmp_randinit_mt(state);
+
+			// 	mpz_urandomb(random_num,state,2048);
+
+			// 	mpz_t num_minus_3;
+			// 	mpz_init(num_minus_3);
+			// 	mpz_sub_ui(num_minus_3,num,3);
+			// 	mpz_mod(random_num,random_num,num_minus_3);
+
+			// 	mpz_add_ui(random_num,random_num,2);
+			// 	return isPrimeUtil(num,random_num);
+			// }
+			
 			// We are sure that random is smaller than (2^n)-1. To confirm that random is of n-bits, we check if random is greater than the lower limit.
-			// Then check whether random number is prime using probabilistic function
+			// Then check whether random number is prime we use the probabilistic function
 			if (mpz_cmp(random, lower_limit) > 0 && mpz_probab_prime_p(random,mpz_get_ui(n))) {
 				// If random is of n-bits and is prime (probably or for sure), then set result to the random number generated and return
 				mpz_set(result,random);	// mpz_set is explained in [REF-9]
@@ -330,7 +444,21 @@ void helper_setup() {
 			gen_GT = element_add(gen_GT, gen_GT, store_gen) // equivalent to gen_GT = gen_GT <operator> store_gen
 		}
 	*/
+	/* C CODE USING ABOVE EXPLANATION to print elements of group GT. UNCOMMENT BELOW CODE FOR PRINTING GT*/
+	// element_t gt, identity_gt, store_gen;
+	// element_init_GT(identity_gt, ret_setup.pairing);
+	// element_init_GT(store_gen, ret_setup.pairing);
+	// element_init_GT(gt, ret_setup.pairing);
+	// element_pairing(gt, ret_setup.generators[0], ret_setup.generators[1]);
+	// element_set0(identity_gt);
+	// element_set(store_gen, gt);
+	// printf("GT-");
+	// while(element_cmp(gt, identity_gt)) {
+	// 	element_printf("%B, ", gt);
+	// 	element_mul(gt, store_gen, gt);
+	// }
 
+	
 	/* 
 		Print Generators of G using generators array
 		Uncomment the below code for printing the 1+m+2 generators
@@ -743,9 +871,27 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 		// Choose alpha randomly between & including 0 and n-1 i.e Zn
 		mpz_urandomm(alpha, state, n);
 		/*
-		+[REF-32] unsigned long int mpz_gcd_ui (mpz t rop, const mpz t op1, unsigned long int op2)
+		+[REF-32] unsigned long int mpz_gcd (mpz_t rop, const mpz_t op1, const mpz_t op2)
 			Provided by gmp library, it computes the greatest common divisor of op1 and op2 and stores the result obtained after computation to rop
+			Pseudo-code/Code for gcd implemented without function mpz_gcd is as follows-
+			// mpz_t a,b;
+			// mpz_init(a);
+			// mpz_init(b);
+			// gmp_scanf("%Zd",a);
+			// gmp_scanf("%Zd",b);
+			// mpz_t zero;
+			// mpz_init(zero);
+			// while (mpz_cmp(b,zero) > 0 ) {
+			// 	mpz_t r;
+			// 	mpz_init(r);
+			// 	mpz_mod(r, a, b);
+			// 	mpz_set(a, b);
+			// 	mpz_set(b, r);
+			// }
+			// gmp_printf("GCD OF a & b: %Zd\n",a);
 		*/
+		
+
 		// Compute gcd of alpha, p and alpha, q
 		mpz_gcd(gcd_alpha_p, alpha, p);
 		mpz_gcd(gcd_alpha_q, alpha, q);
@@ -1316,7 +1462,7 @@ int main (int argc, char **argv) {
 
 	num_user = 0;
 	srand(time(NULL));
-	
+
 	/* 
 	+[REF-6] security_parameter: 
 		Declare the variable for storing the security parameter
