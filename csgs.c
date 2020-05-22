@@ -8,7 +8,6 @@ Submitted by:			Guided by:
 Abdul Sattar Mapara		Dr. Syed Taqi Ali Sir
 BT16CSE053
 
-
 ABOUT:
 - Guide:  Dr. Syed Taqi Ali Sir
 - Author: Abdul Sattar Mapara
@@ -27,20 +26,21 @@ CONCEPTS explained:
 	* If G1 != G2, then the pairing is called ASYMMETRIC PAIRING
 - BILINEAR MAP:
 	* The map from two groups G1, G2 to a third group GT is the bilinear map.
+	(In pbc library, the G1 and G2 groups associated with pairings, are groups of points on an ellitpic curve; GT group is currently implemented as a subgroup of a finite field)
 	* Denoted (as observed at many places, including the research paper being implemented) with e
 - Properties of bilinear pairing:
 	* Bilinearity: e(g^a, h^b) = e(g^b, h^a) = e(g,h)^(ab), where g,h are generators of group G1 & G2 respectively.
 	* Non-degenerate: If g,h are generator of G,H then e(g,h) is generator of GT
 
 INSTRUCTIONS to read the comments/description: 
-- Read the comments before the struct defined just after importing the libraries.
+- Read the comments before the struct declared just after importing the libraries.
 - Read the comments just after the struct referred above
 - Jump to the main function and start reading the comments
 - Whenever a function call is made, jump to the function definition and read comments written just above & inside the function body
 - References are mentioned in the format [REF-<Number>]
-- IMPORTANT NOTE: Whenever a FUNCTION/DATA-TYPE is encountered for the first time according to the flow mentioned above, it is explained. For the next time, to avoid Duplicate explanation, I have not explained it again. If an explanation to FUNCTION/DATA-TYPE is required next time it is being read, please search it in index_of_references.txt attached, note the reference number & search the explanation of function/data-type by searching +[REF-<Number>].
+- IMPORTANT NOTE: Whenever a FUNCTION/DATA-TYPE is encountered for the first time according to the flow mentioned above, it is explained. For the next time, to avoid Duplicate explanation, I have not explained it again. If an explanation to FUNCTION/DATA-TYPE is required next time it is being read, please search it in index_of_references.txt (OR simply look at the end of this file), note the reference number & search the explanation of function/data-type by searching +[REF-<Number>].
   For example, if I want to search for details on a function whose reference number is [REF-2], then I will search <Plus symbol '+'>[REF-2] in this file.
-[It took more effort to avoid duplicate explanation, than it would have taken by writing explanation again & again. Since, it was a good practice to avoid duplicate explanation, I have used such a technique.]
+[It took more effort to avoid duplicate explanation, than it would have taken by writing explanation again. Since, it was a good practice to avoid duplicate explanation, I have used such a technique.]
 - Preferably, set word wrap to ON in the text editor to avoid horizontal scrolling at certain places.
 
 ACKNOWLEDGEMENT:
@@ -48,7 +48,7 @@ ACKNOWLEDGEMENT:
 Since, this was the first time I was implementing any research paper, and I was new in using the PBC library, it was a mammoth task in front of me. His motivation helped me complete the task.
 I would also like to thank my parents for their constant support.
 
-Following is the WORKING CODE (with comments & descriptions at suitable places) in C programming language for the Section "5.2 Core Construction" of the paper.
+Following is the WORKING CODE (with comments & descriptions at suitable places) in C programming language for the Section "5.2 Core Construction" of the paper. The output for the code is present in the file output_large.txt (for large values) and output_small.txt (for small values)
 */
 
 // Importing the required libraries
@@ -815,7 +815,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 		- Else, not. We repeat the process from selecting the random element
 		This trick will work-
 		- Since p and q are primes, and n = p*q, n has only 2 factors p and q.
-		- We need to show that the order of r is n i.e from r^1 to r^n, only r^n is an identity element.If r^n is an identity element, only then r can be a generator. So, let r^n be an identity element. We know that things get repeated after generating an identity element. So, if there is some x, such that r^x = identity element, then n should be a multiple of x. Since, p and q are only factors of n, and we check r^p is not an identity element and r^q is not an identity element, we can argue that there is no x such that r^x = identity element and x != n.
+		- We need to show that the order of r is n i.e from r^1 to r^n, only r^n is an identity element.If r^n is an identity element, only then r can be a generator. So, let r^n be an identity element. We know that things get repeated after generating an identity element. So, if there is some x, such that r^x = identity element, then n should be a multiple of x. Since, p and q are the only factors of n, and we check r^p is not an identity element and r^q is not an identity element, we can argue that there is no x such that r^x = identity element and x != n.
 	*/
 	do {
 		// Choose a random element from G
@@ -890,7 +890,6 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 			// }
 			// gmp_printf("GCD OF a & b: %Zd\n",a);
 		*/
-		
 
 		// Compute gcd of alpha, p and alpha, q
 		mpz_gcd(gcd_alpha_p, alpha, p);
@@ -945,6 +944,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 }
 
 /* 
+	enroll function
 	Input: PP, MK, ID
 	0 <= ID < 2^k < p (& q)
 	Sets SID (secret unique ID) and signing key - K = (k1,k2,k3)
@@ -1734,10 +1734,53 @@ int main (int argc, char **argv) {
 	return 0;
 
 }
-
-
 /*
 REFERENCES:
 - GMP Manual. [Online]. Available: https://gmplib.org/gmp-man-6.0.0a.pdf (accessed May, 2020)
 - PBC Library Manual. [Online]. Available: https://crypto.stanford.edu/pbc/manual.html (accessed May, 2020)
+*/
+/*
+	index_of_references
+REFERENCE NUMBER	EXPLANATION OF [Function names end with ()]
+REF-1					element_t
+REF-2					mpz_t
+REF-3					pairing_t
+REF-4					pbc_param_t
+REF-5					ret_setup
+REF-6					security_parameter
+REF-7					mpz_init()
+REF-8					mpz_set_ui()
+REF-9					mpz_set()
+REF-10					mpz_add_ui()
+REF-11					gmp_randstate_t
+REF-12					gmp_randinit_default()
+REF-13					gmp_randseed_ui()
+REF-14					mpz_cmp_ui()
+REF-15					mpz_ui_pow_ui()
+REF-16					mpz_urandomb()
+REF-17					mpz_cmp()
+REF-18					mpz_probab_prime_p()
+REF-19					mpz_mul()
+REF-20					gmp_printf()
+REF-21					pbc_param_init_a1_gen()
+REF-22					pairing_init_pbc_param()
+REF-23					element_init_G1()
+REF-24					element_init_GT()
+REF-25					element_set0()
+REF-26					element_set()
+REF-27					element_random()
+REF-28					element_pow_mpz()					
+REF-29					element_printf()
+REF-30					mpz_get_ui()
+REF-31					mpz_urandomm()
+REF-32					mpz_gcd()
+REF-33					element_add()
+REF-34					pbc_param_out_str()
+REF-35					element_pairing()
+REF-36					mpz_mul_ui()
+REF-37					mpz_add()
+REF-38					mpz_invert()
+REF-39					element_mul()
+REF-40					mpz_set_ui()
+REF-41					element_invert()
 */
