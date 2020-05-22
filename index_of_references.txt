@@ -3,10 +3,10 @@ REF-1					element_t
 REF-2					mpz_t
 REF-3					pairing_t
 REF-4					pbc_param_t
-REF-5
-REF-6
+REF-5					ret_setup
+REF-6					security_parameter
 REF-7					mpz_init()
-REF-8
+REF-8					mpz_set_ui()
 REF-9					mpz_set()
 REF-10					mpz_add_ui()
 REF-11					gmp_randstate_t
@@ -33,4 +33,10 @@ REF-31					mpz_urandomm()
 REF-32					mpz_gcd()
 REF-33					element_add()
 REF-34					pbc_param_out_str()
-S
+REF-35					element_pairing()
+REF-36					mpz_mul_ui()
+REF-37					mpz_add()
+REF-38					mpz_invert()
+REF-39					element_mul()
+REF-40					mpz_set_ui()
+REF-41					element_invert()

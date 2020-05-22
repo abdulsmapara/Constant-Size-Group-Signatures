@@ -1,6 +1,9 @@
 /*
 			ASSIGNMENT 1
 
+		Number Theory & Modern Cryptography
+				VNIT, Nagpur
+
 Submitted by:			Guided by:
 Abdul Sattar Mapara		Dr. Syed Taqi Ali Sir
 BT16CSE053
@@ -9,29 +12,41 @@ BT16CSE053
 ABOUT:
 - Guide:  Dr. Syed Taqi Ali Sir
 - Author: Abdul Sattar Mapara
-- Course: Number Theory and Modern Cryptography 
+- Course: Number Theory and Modern Cryptography
 - Paper Implemented: CSGS (https://crypto.stanford.edu/pbc/)
 
 Short SUMMARY of the Paper:
 - The aim of the scheme is to allow any member of a certain group to sign a message on behalf of the group, but the signer remains anonymous within the group. 
-- However, in certain extenuating circumstances, an authority should have the ability to evoke the anonymity of a signer and trace the signature. 
+- However, in certain situations, an authority should have the ability to evoke the anonymity of a signer and trace the signature.
 - Use in Anonymous attestation, which has practical applications such as in building Trusted Platform Modules (TPMs)
 
 CONCEPTS explained:
-- BILINEAR PAIRING:
-	*
-- ASYMMETRIC PAIRING:
-	*
--
+- Pairing based cryptography
+	* Cryptography with use of a pairing between elements of two cryptographic groups to a third group with a mapping e: G1*G2-> GT. (G1, G2 - elliptic curves with some parameters, GT - Algebraic group)
+	* If G1=G2, then the pairing is called SYMMETRIC PAIRING, which is used in this program
+	* If G1 != G2, then the pairing is called ASYMMETRIC PAIRING
+- BILINEAR MAP:
+	* The map from two groups G1, G2 to a third group GT is the bilinear map.
+	* Denoted (as observed at many places, including the research paper being implemented) with e
+- Properties of bilinear pairing:
+	* Bilinearity: e(g^a, h^b) = e(g^b, h^a) = e(g,h)^(ab), where g,h are generators of group G1 & G2 respectively.
+	* Non-degenerate: If g,h are generator of G,H then e(g,h) is generator of GT
 
 INSTRUCTIONS to read the comments/description: 
 - Read the comments before the struct defined just after importing the libraries.
 - Read the comments just after the struct referred above
 - Jump to the main function and start reading the comments
-- Whenever a function call is made, jump to the function definition and read comments written inside the function body
-- References are mentioned in the format [REF-<Number>]. For example, if a data type is explained as [REF-1] DATA-TYPE, then later on, its explaination will be referred using [REF-1]. (I felt this is easier to jump to a reference by searching [REF-<Number>], [<Number>] format not used because array element is fetched as array_name[<Number>], which can lead to confusion )
-- IMPORTANT NOTE: Whenever a FUNCTION/DATA-TYPE is encountered for the first time according to the flow mentioned above, it is explained. For the next time, to avoid Duplicate explanation, I have not explained it again. To make it easy to understand, please refer the list (attached as index_of_references.txt) to search for explanation of function/data-type.
-- Preferably, set word wrap to ON in the text editor to avoid horizontal scrolling
+- Whenever a function call is made, jump to the function definition and read comments written just above & inside the function body
+- References are mentioned in the format [REF-<Number>]
+- IMPORTANT NOTE: Whenever a FUNCTION/DATA-TYPE is encountered for the first time according to the flow mentioned above, it is explained. For the next time, to avoid Duplicate explanation, I have not explained it again. If an explanation to FUNCTION/DATA-TYPE is required next time it is being read, please search it in index_of_references.txt attached, note the reference number & search the explanation of function/data-type by searching +[REF-<Number>].
+  For example, if I want to search for details on a function whose reference number is [REF-2], then I will search <Plus symbol '+'>[REF-2] in this file.
+[It took more effort to avoid duplicate explanation, than it would have taken by writing explanation again & again. Since, it was a good practice to avoid duplicate explanation, I have used such a technique.]
+- Preferably, set word wrap to ON in the text editor to avoid horizontal scrolling at certain places.
+
+ACKNOWLEDGEMENT:
+- I sincerely thank Dr. Syed Taqi Ali Sir who helped me during this mini-project & cleared all my doubts.
+Since, this was the first time I was implementing any research paper, and I was new in using the PBC library, it was a mammoth task in front of me. His motivation helped me complete the task.
+I would also like to thank my parents for their constant support.
 
 Following is the WORKING CODE (with comments & descriptions at suitable places) in C programming language for the Section "5.2 Core Construction" of the paper.
 */
@@ -52,12 +67,12 @@ Following is the WORKING CODE (with comments & descriptions at suitable places) 
 */
 typedef struct setup_output {
 	/*
-	[REF-1] element_t
+	+[REF-1] element_t
 	It is a data type (offered by pbc library), that stores the elements of groups, rings and fields.
 	*/
 	element_t mk0;
 	/*
-	[REF-2] mpz_t
+	+[REF-2] mpz_t
 	Data type offered by GMP library for storing large integers.
 	*/
 	mpz_t mk1;
@@ -68,7 +83,7 @@ typedef struct setup_output {
 	element_t G;
 
 	/*
-	[REF-3] pairing_t
+	+[REF-3] pairing_t
 	pairing_t is a data type offered by pbc library, that stores the bilinear pairings.
 	*/
 	pairing_t pairing;
@@ -88,7 +103,7 @@ typedef struct setup_output {
 	element_t identity;	// identity of G
 
 	/*
-	[REF-4] pbc_param_t
+	+[REF-4] pbc_param_t
 	Data type offered by pbc library to generate/store pairing parameters
 	*/
 	pbc_param_t p;
@@ -99,7 +114,7 @@ typedef struct setup_output {
 	mpz_t mval;
 }setup_result;
 /*
-	[REF-5] ret_setup is a variable of type setup_result (which is a structure). It stores/handles/manipulates the following values -
+	+[REF-5] ret_setup is a variable of type setup_result (which is a structure). It stores/handles/manipulates the following values -
 
 		a. element_t mk0;
 		   mk0 is the first part of the master enrollment key, generated by the function setup. It is of type element_t, which is explained in[REF-1].
@@ -159,28 +174,28 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 	mpz_init(random);
 
 	/*
-	[REF-11] gmp_randstate_t
+	+[REF-11] gmp_randstate_t
 		Random state means an algorithm selection and current state data. The data type (provided by gmp library) for such objects is gmp_randstate_t. For example: gmp_randstate_t rstate;
 	*/
 	// Declare state
 	gmp_randstate_t state;
 	
 	/*
-	[REF-12] void gmp_randinit_default (gmp randstate t state)
+	+[REF-12] void gmp_randinit_default (gmp randstate t state)
 		Function provided by gmp library that initializes the state variable with a default algorithm.
 	*/
 	// Initialize state
 	gmp_randinit_default(state);
 
 	/*
-	[REF-13] void gmp_randseed_ui (gmp randstate t state, unsigned long int seed)
+	+[REF-13] void gmp_randseed_ui (gmp randstate t state, unsigned long int seed)
 		Function provided by gmp library to set an initial seed value into state.
 	*/
 	// Set initial seed value to state. We pass seed as a random number defined as (random_number + 1)*(another-random-number) + 1. 1 was added to avoid seed = 0.
 	gmp_randseed_ui(state, (rand()+1)*(rand()+1));
 
 	/*
-	[REF-14] int mpz_cmp_ui (const mpz t op1, unsigned long int op2)
+	+[REF-14] int mpz_cmp_ui (const mpz t op1, unsigned long int op2)
 		Function provided by GMP library to compare op1 and op2. 
 		It returns a positive value if op1 > op2, zero if op1 == op2, or a negative value if op1 < op2.
 	
@@ -205,7 +220,7 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 		// Initialize the variable declared of type mpz_t
 		mpz_init(lower_limit);
 		/*
-		[REF-15] void mpz_ui_pow_ui (mpz t rop, unsigned long int base, unsigned long int exp)
+		+[REF-15] void mpz_ui_pow_ui (mpz t rop, unsigned long int base, unsigned long int exp)
 			Function provided by gmp library to set rop to base^exp. According to the manual, 0^0 returns 1.
 		Pseudo code for self-implementation:
 			int rop
@@ -215,21 +230,21 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 				rop = power(base, exp)
 		*/
 		/*
-		[REF-30] unsigned long int mpz_get_ui (const mpz t op)
+		+[REF-30] unsigned long int mpz_get_ui (const mpz t op)
 			Provided by gmp library, it returns the value of op as an unsigned long.
 		*/
 		mpz_ui_pow_ui(lower_limit, 2, mpz_get_ui(n)-1);
 		// Loop till we find a prime number of n bits
 		while (1){
 			/*
-			[REF-16] void mpz_urandomb (mpz t rop, gmp randstate t state, mp bitcnt t n)
+			+[REF-16] void mpz_urandomb (mpz t rop, gmp randstate t state, mp bitcnt t n)
 				Function provided by gmp library to generate a uniformly distributed random integer in the range 0 to 2^n − 1, inclusive.
 			*/
 			// Store a random value from 0 to (2^n)-1 in the variable random
 			mpz_urandomb(random, state ,mpz_get_ui(n));
 
 			/*
-			[REF-17] int mpz_cmp (const mpz t op1, const mpz t op2)
+			+[REF-17] int mpz_cmp (const mpz t op1, const mpz t op2)
 				Function provided by GMP library to compare op1 and op2. 
 				It returns a positive value if op1 > op2, zero if op1 == op2, or a negative value if op1 < op2.
 	
@@ -244,7 +259,7 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 				return retval;
 			*/
 			/*
-			[REF-18] int mpz_probab_prime_p (const mpz t n, int reps)
+			+[REF-18] int mpz_probab_prime_p (const mpz t n, int reps)
 				Function provided by gmp library to check if n is prime. Returns 2 if n is definitely prime, returns 1 if n is probably prime (without being certain), or return 0 if n is definitely composite.
 				About the argument reps: It controls how many such tests are done. Larger value of reps will reduce the chances of a composite being returned as probably prime
 			*/
@@ -298,11 +313,23 @@ void helper_setup() {
 	// e is the bilinear map, which can be accessed using the function element_pairing()
 	printf("FOR e and GT, the pairing parameters are as follows:\n");
 	/*
-	[REF-34] void pbc_param_out_str(FILE *stream, pbc_param_t p)
+	+[REF-34] void pbc_param_out_str(FILE *stream, pbc_param_t p)
 		Provided by pbc library, it is used to write pairing parameters to 'stream' in a text format. To print on console, we provide stream = stdout.
 	*/
 	pbc_param_out_str(stdout, ret_setup.p);
-	// Can print GT using one of its generators also.
+	// Can print GT using one of its generators also. Pseudo code for printing GT -
+	/*
+		// g is the generator of G
+		// u is another generator of G
+		// From non-degenerate property, e(g,u) is the generator of GT
+		//So, 
+		gen_GT = e(g,u)
+		store_gen = gen_GT
+		while (gen_GT != identity-of-GT) {
+			print(gen_GT)
+			gen_GT = element_add(gen_GT, gen_GT, store_gen) // equivalent to gen_GT = gen_GT <operator> store_gen
+		}
+	*/
 
 	/* 
 		Print Generators of G using generators array
@@ -323,7 +350,7 @@ void helper_setup() {
 	element_init_GT(Aval, ret_setup.pairing);
 	// To compute e(g,g) i.e to map g,g from G1,G1 respectively to an element in GT, we use the following function element_pairing
 	/*
-	[REF-35] void element_pairing(element_t out, element_t in1, element_t in2)
+	+[REF-35] void element_pairing(element_t out, element_t in1, element_t in2)
 		Provided by pbc library, it computes a pairing: out = e(in1, in2), where in1, in2, out must be in the groups G1, G2, GT. (In our case, G1=G2)
 	*/
 	element_pairing(Aval, ret_setup.generators[0], ret_setup.generators[0]);// Currently, Aval = e(g,g)
@@ -366,7 +393,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	mpz_init(m);
 
 	/*
-	[REF-9] void mpz_set(mpz_t a, mpz_t b)
+	+[REF-9] void mpz_set(mpz_t a, mpz_t b)
 		The function (provided by GMP library) is used to set the value of a equal to the value of b.
 
 	Pseudo code for self-implementation (i.e without using predefined function):
@@ -391,7 +418,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	mpz_init(q_bits);
 
 	/*
-	[REF-10] void mpz_add_ui (mpz t rop, const mpz t op1, unsigned long int op2) 
+	+[REF-10] void mpz_add_ui (mpz t rop, const mpz t op1, unsigned long int op2) 
 		Sets rop equal to addition of op1 and op2
 	
 	Pseudo code for self-implementation (without using pre-defined function):
@@ -437,7 +464,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	mpz_init(n);	// mpz_init explained in [REF-7]
 	
 	/*
-	[REF-19] void mpz_mul (mpz t rop, const mpz t op1, const mpz t op2)
+	+[REF-19] void mpz_mul (mpz t rop, const mpz t op1, const mpz t op2)
 		Function provided by gmp library to set rop = op1*op2
 	
 	Pseudo code:
@@ -452,7 +479,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	mpz_set(retval->n, n);
 
 	/*
-	[REF-20] int gmp_printf (const char *fmt, . . .)
+	+[REF-20] int gmp_printf (const char *fmt, . . .)
 		Function provided by gmp library that prints the variable of a data type provided by gmp library
 	*/
 	// Print values of n, p and q to console
@@ -473,7 +500,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	pbc_param_t par; // pbc_param_t explained in [REF-4]
 
 	/*
-	[REF-21] void pbc_param_init_a1_gen(pbc_param_t param, mpz_t n)
+	+[REF-21] void pbc_param_init_a1_gen(pbc_param_t param, mpz_t n)
 		Function provided by pbc library.
 		According to pbc manual, it generate type A1 pairing parameters and store them in param. 
 		The order of bilinear group (that will be generated using param) will be n. 
@@ -485,7 +512,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	pbc_param_init_a1_gen(retval->p, n);
 
 	/*
-	[REF-22] void pairing_init_pbc_param(pairing, pbc_param_t p)
+	+[REF-22] void pairing_init_pbc_param(pairing, pbc_param_t p)
 		Function provided by pbc library.
 		According to PBC manual, it initializes a pairing (to be directly used for generating groups etc.) with pairing parameters p.
 	*/
@@ -504,7 +531,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	// Initialize pairings in ret_setup with parameter par generated above (type- A1 pairing parameter)
 	pairing_init_pbc_param(retval->pairing, par); // Refer [REF-22] for details on pairing_init_pbc_param
 	/*
-	[REF-23] void element_init_G1(element_t e, pairing_t pairing)
+	+[REF-23] void element_init_G1(element_t e, pairing_t pairing)
 		The function initializes e to be an element of the group G1 of the pairing (initialized above in the code using type A1 pairing parameters).
 		When an element is initialized it is associated with an algebraic structure, such as a particular finite field or elliptic curve group.
 	*/
@@ -513,7 +540,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	element_init_G2(g1, pairing);
 
 	/*
-	[REF-24] void element_init_GT(element_t e, pairing_t pairing)
+	+[REF-24] void element_init_GT(element_t e, pairing_t pairing)
 		The function initializes e to be an element of the group GT of the pairing (initialized above in the code using type A1 pairing parameters).
 	*/
 	element_init_GT(gt1, pairing);
@@ -531,7 +558,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	element_init_G2(mk0, pairing);
 
 	/*
-	[REF-25] void element_set0(element_t e)
+	+[REF-25] void element_set0(element_t e)
 		For groups of points on an ellitpic curve, such as the G1 and G2 groups associated with pairings, both 0 and 1 represent the identity element. 
 		Hence, setting element to 0 means setting element to identity element of G1/G2.
 	*/
@@ -544,7 +571,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	element_set0(retval->identity);
 
 	/*
-	[REF-26] void element_set(element_t e, element_t a)
+	+[REF-26] void element_set(element_t e, element_t a)
 		Provided by pbc library, it sets element e to a
 	*/
 	// Set G in ret_setup with g1 used here.
@@ -561,14 +588,14 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	*/
 	do {
 		/*
-		[REF-27] void element_random(element_t e)
+		+[REF-27] void element_random(element_t e)
 			Function provided by pbc library, it assigns a uniformly random element to e (as e lies in a group).
 		*/
 		// Choose some random element from group G
 		element_random(g1);	
 		
 		/*
-		[REF-28] void element_pow_mpz(element_t rop, element_t e, mpz_t a)
+		+[REF-28] void element_pow_mpz(element_t rop, element_t e, mpz_t a)
 			Provided by pbc library
 			Computes e^a and assigns to rop. Here, e is element of group (or any other structure i.e of type element_t) and a is of type mpz_t.
 		*/
@@ -583,7 +610,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	element_init_G1(retval->gen_subgroup_q, pairing); /*Initialize that value in ret_setup with pairing*/
 	#ifdef DEBUG
 		/*
-		[REF-29] int element_printf(const char *format, …)
+		+[REF-29] int element_printf(const char *format, …)
 			Provided by pbc library, it prints the element to console.
 		*/
 		element_printf("h = %B\n", h);
@@ -592,7 +619,7 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 	element_set(retval->gen_subgroup_q, h); // Details on element_set available in [REF-26]
 
 	/*
-	[REF-33] void element_add(element_t n, element_t a, element_t b)
+	+[REF-33] void element_add(element_t n, element_t a, element_t b)
 		Provided by pbc library, it sets n = a + b
 		NOTE: For groups of points on an ellitpic curve, such as the G1 and G2 groups associated with pairings, the operation - addition and multiplication represent the group operation.
 		Hence, we can use element_add to compute a <operation> b, where a and b are elements of group
@@ -710,13 +737,13 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 
 	do{
 		/*
-		[REF-31] void mpz_urandomm (mpz t rop, gmp randstate t state, const mpz t n)
+		+[REF-31] void mpz_urandomm (mpz t rop, gmp randstate t state, const mpz t n)
 			Provided by gmp library, it generates a uniform random integer in the range 0 to n − 1, both included.
 		*/
 		// Choose alpha randomly between & including 0 and n-1 i.e Zn
 		mpz_urandomm(alpha, state, n);
 		/*
-		[REF-32] unsigned long int mpz_gcd_ui (mpz t rop, const mpz t op1, unsigned long int op2)
+		+[REF-32] unsigned long int mpz_gcd_ui (mpz t rop, const mpz t op1, unsigned long int op2)
 			Provided by gmp library, it computes the greatest common divisor of op1 and op2 and stores the result obtained after computation to rop
 		*/
 		// Compute gcd of alpha, p and alpha, q
@@ -773,60 +800,129 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 
 /* 
 	Input: PP, MK, ID
-	0 <= ID < 2^k < p
+	0 <= ID < 2^k < p (& q)
+	Sets SID (secret unique ID) and signing key - K = (k1,k2,k3)
 */
-static int num_user;
+static int num_user; // used to get a unique number for every user
 void enroll(mpz_t final_sid, mpz_t userID, element_t k1, element_t k2, element_t k3) {
-	// Choose unique SID
-	
-
+	// Choose unique SID for a given USER ID
+	// SID is later used for tracing purposes
+	/*
+		Conditions for generating SID - 
+		1. Should be unique for given user
+		2. omega + sid must lie in Zn* (multiplicative group modulo n)
+		
+		SID generated follows the above conditions as we perform the following steps -
+		1. We first assign sid = user ID
+		2. If sid + ω belongs to Zn* (i.e. if gcd(sid+ω, n) is 1), we are done
+		3. If not, we set sid = min(p,q) + num_user + 1(where num_user is initially 0) and check if sid + ω belongs to Zn*
+		4. If not, we increment, num_user and check if sid + ω belongs to Zn*
+		5. We repeat till we get such an sid
+		6. Since num_user will be different for each user (as we use static variable), sid is unique
+		7. The maximum number of users that can be enrolled = 2^ k (as userID has upper bound 2^k < p).
+		   We know that 2^k < p (and q also, as no. of bits in q are greater than k).
+		   Hence sid assigned in 3. is always different than any sid assigned in 1. (sid in 1. < p & q, while sid in 3. > p & q)
+		   Moreover, num_user is unique for every user, so sid is uniquely generated in 3.
+		   <TODO>
+	*/
+	// Declare & Initialize variables sid to store sid, gcd to store gcd(sid + ω, n) 
 	mpz_t gcd, sid;
 	mpz_init(gcd);
 	mpz_init(sid);
+
+	// Compute gcd of userID and n
 	mpz_gcd(gcd, userID, ret_setup.n);
+	// Ensure that gcd(userID, n) is always 1 (as userID < p & q)
 	assert(mpz_cmp_ui(gcd,1) == 0);
+
+	// val stores the minimum of p and q
 	mpz_t val;
 	mpz_init(val);
 	mpz_set(val, ret_setup.pval);
 	if (mpz_cmp(ret_setup.pval,ret_setup.qval) > 0) {
 		mpz_set(val, ret_setup.qval);
 	}
-	
+
+	// Loop till we find sid such that gcd(sid + ω, n) == 1
 	while (1){
+		/*
+		+[REF-37] void mpz_add (mpz_t rop, const mpz_t op1, const mpz_t op2)
+			Provided by gmp library
+			Sets rop = op1 + op2
+		*/
+		// Compute (sid + ω) % n, then take gcd of sid + ω with n, then compare with 1
 		mpz_add(sid, userID, ret_setup.omega);
 		mpz_mod(sid, sid, ret_setup.n);
 		mpz_gcd(gcd, sid, ret_setup.n);
+
+		// Increment value of num_user to make it unique every time
 		num_user+=1;
+		// If gcd is 1, sid is found, we can break
 		if (mpz_cmp_ui(gcd, 1) == 0) {
 			break;
 		}
-		
+		// Otherwise set userID = min(p,q) + num_user (1 already added above to num_user)
+		// Note that here userID stores the temporary value of sid.
 		mpz_add_ui(userID, val, num_user);
 	}
+
+	// Now,we found the suitable sid (as per conditions)
+	// NOTE: variable sid stores the value sid + ω and real sid is stored in variable userID
+	// Next, we need to generate the signing key - k = (k1,k2,k3)
+
+	// First step is to take inverse of sid + ω wrt modulo n (inverse exists as sid + ω is in Zn*)
 	mpz_t inverse;
 	mpz_init(inverse);
+	/*
+	+[REF-38] int mpz_invert (mpz_t rop, const mpz_t op1, const mpz_t op2)
+		It computes the inverse of op1 modulo op2 and puts the result in rop. 
+		If the inverse exists, the return value is non-zero and rop will satisfy 0 < rop < |op2|. If an inverse doesn’t exist then the return value is zero and rop is undefined.
+	*/
+	// store inverse of sid + ω in variable inverse
 	assert(mpz_invert(inverse, sid, ret_setup.n));
+
+	// Print SID to console
 	gmp_printf("sid (not to be disclosed to user): %Zd\n", userID);
+	
+	// Store SID in the parameter final_sid to be used by other functions [As SID is stored in variable with name userID]
 	mpz_init(final_sid);
 	mpz_set(final_sid, userID);
+
 	// gmp_printf("DEBUG: inverse of sid+omega: %Zd\n", inverse);
 	
+	// k1, k2 and k3 are defined as follows -
 	// k1, k2, k3 = ((g^alpha)^(1/w+sid), g^sid, u^sid)
+	// NOTE: u is the next generator stored in the array generators
 
+	// Initialize k1,k2,k3 to be elements of group G1 (Remember the bilinear map: G1*G1->GT)
 	element_init_G1(k1, ret_setup.pairing);
 	element_init_G1(k2, ret_setup.pairing);
 	element_init_G1(k3, ret_setup.pairing);
+	// compute k1 = g^alpha
 	element_pow_mpz(k1, ret_setup.generators[0], ret_setup.alpha);
-	element_pow_mpz(k1, k1, inverse);
+	// compute k1 = (current_k1)^(inverse of sid + ω)
+	element_pow_mpz(k1, k1, inverse); // k1 is ready
 
+	// compute k2 = g^sid [sid is stored in variable userID]
 	element_pow_mpz(k2, ret_setup.generators[0], userID);
+
+	// compute k3 = u^sid [sid is stored in variable userID].
+	// NOTE: u is another generator stored in the array generators
 	element_pow_mpz(k3, ret_setup.generators[1], userID);
 
+	// ENROLL sets the parameters final_sid with sid assigned to user with userID - userID
+	// It sets k1, k2 and k3 so that signing key is ready for use by other functions.
 }
+/*
+	sign function
+	For a given user with Kid = k1, k2, k3 and a message m (of m-bits), it returns a signature-
+	Signature = (sigma1, sigma2, sigma3, sigma4, pi1, pi2)
+*/
 void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element_t sigma3,element_t sigma4, element_t k1, element_t k2, element_t k3, char* message) {
-	// CHOOSE A RANDOM s in Zn
+	// First, Kid is used to create a two-level hybrid signature with the message at the second level. 
+
+	// Declare & Initialize integers (using gmp library)
 	mpz_t s, t1, t2, t3, t4, t_temp;
-	
 	mpz_init(s);
 	mpz_init(t1);
 	mpz_init(t2);
@@ -834,210 +930,387 @@ void sign(element_t pi1, element_t pi2,element_t sigma1,element_t sigma2,element
 	mpz_init(t4);
 	mpz_init(t_temp);
 
-	gmp_randstate_t state;
-	gmp_randinit_default(state);
-	gmp_randseed_ui(state, (rand()+1)*(rand()+1));
+	// Below, we generate a random number s ∈ Zn
+	// Declare state
+	gmp_randstate_t state; //For details on gmp_randstate, refer [REF-11] 
+	// Initialize state
+	gmp_randinit_default(state); // For details on gmp_randinit_default, refer [REF-12]
+	// Set initial seed value to state. We pass seed as a random number defined as (random_number + 1)*(another-random-number) + 1. 1 was added to avoid seed = 0.
+	gmp_randseed_ui(state, (rand()+1)*(rand()+1)); // For details on gmp_randseed_ui, refer [REF-13]
+	
+	// Generate random number s in the range [0,n-1]
 	mpz_urandomm(s, state, ret_setup.n);
-	// 01 = k1
-	// 02 = k2
-	// 03 -
-	element_t theta3, val1;
-	element_init_G1(theta3, ret_setup.pairing);
-	element_init_G1(val1, ret_setup.pairing);
+	
+	// First step in signature generation is to compute the (randomized but unblinded) hybrid signature - 01, 02, 03, 04 [Read 0 as theta]
+
+	// 01 = k1 (straightforward)
+	// 02 = k2 (straightforward)
+	
+	// Declare and initialize elements of groups (G1, GT suitably) with pairing generated before to be used for above tasks
+	element_t theta3, val1; 
+	element_init_G1(theta3, ret_setup.pairing); // theta3 belongs to G1
+	element_init_G1(val1, ret_setup.pairing); // val1 belongs to G1
+
+	// Compute 03 = v dash, the 3rd generator of group G (order n) stored in array generators
 	element_set(theta3, ret_setup.generators[2]);
+
+	// Declare & initialize another element of group G1
 	element_t temp_pw;
 	element_init_G1(temp_pw, ret_setup.pairing);
+
+	// msg_val stores the current message bit in the loop below
 	mpz_t msg_val;
 	mpz_init(msg_val);
+
+	// We need to multiply generators from 4th generator to (m+3)-th generator, each raised to power = message bit value. This value multiplied with v dash is stored in val1
 	for (int i = 3; i < (3+mpz_get_ui(ret_setup.mval)); i++) {
+		/*
+		+[REF-40] void mpz_set_ui(mpz_t rop, unsigned long int a)
+			Provided by gmp library, sets rop to value of a
+		*/
+		// Store the current message bit
 		if (message[i-3] == '1') {
 			mpz_set_ui(msg_val,1);
 		} else {
 			mpz_set_ui(msg_val, 0);
 		}
 		// gmp_printf("%Zd\n", msg_val);
+		// Compute temp_pw = (current-generator) raised to power current message bit value
 		element_pow_mpz(temp_pw, ret_setup.generators[i], msg_val);
+		// Compute 03=03*(temp_pw) [Note that 03 was initialized with v dash (3rd generator of G)]
 		element_mul(theta3, theta3, temp_pw);
 	}
-	element_set(val1, theta3);
+	// Set val1 = 03 so that current computed value of theta3 can be used later
+	element_set(val1, theta3); //[REF-VAL-1]
+	// Compute 03 = 03 raised to power s [s is the random number generated at the start of the function]
 	element_pow_mpz(theta3, theta3, s);
+
+	// Compute theta3 = theta3*k3
 	element_mul(theta3, theta3, k3);
+	// theta3 has been computed successfully
+
 	// element_printf("theta3: %B\n", theta3);
-	// 04 -
+	
+	// Start computing theta4 (04) -
+	// Declare and initialize theta4 - element belong to group G1 (with the pairing generated earlier)
 	element_t theta4;
 	element_init_G1(theta4, ret_setup.pairing);
+	// Initialize 04 = g (1st generator of G)
 	element_set(theta4, ret_setup.generators[0]);
+	// Compute 04 = 04 raised to power s
 	element_pow_mpz(theta4, theta4, s);
+	/*
+	+[REF-41] void element_invert(element_t a, element_t b)
+		Provided by pbc library, it assigns inverse of element b to element a
+	*/
+	// Compute 04 = inverse(current value of theta4)
 	element_invert(theta4, theta4);
-	// element_printf("theta4: %B\n", theta4);
-	// Initial signature formed
+	// Theta4 computed successfully
 
-	// Verify
+	// element_printf("theta4: %B\n", theta4);
+	// ----Initial signature formed---
+
+	/*
+		----------TEST 2----------
+		Verify the initial signature using the regular verification equations (refer research paper)
+	*/
+	// Declare & Initialize elements of groups with pairing
 	element_t ver1, ver2, ver3;
-	element_init_GT(ver1, ret_setup.pairing);
-	element_init_GT(ver2, ret_setup.pairing);
-	element_init_GT(ver3, ret_setup.pairing);
+	element_init_GT(ver1, ret_setup.pairing);	// ver1 is an element of group GT
+	element_init_GT(ver2, ret_setup.pairing);	// ver2 is an element of group GT
+	element_init_GT(ver3, ret_setup.pairing);	// ver3 is an element of group GT
+
+	// Set ver1 = e(03, g)
 	element_pairing(ver1, theta3, ret_setup.generators[0]);
 	// element_printf("ver1: %B\nval1:%B\n", ver1, val1);
+	
+	// Set ver2 = e(04, val1) [val1 is stored at [REF-VAL-1]]
 	element_pairing(ver2, theta4, val1);
 	// element_printf("ver2: %B\n", ver2);
+	
+	// compute ver1 = current value of ver1 * current value of ver2
 	element_mul(ver1, ver1, ver2);
 	// element_printf("ver1: %B\tver2: %B\n",ver1, ver2);
+
+	// Compute ver3 = e(02 = k2, u)
 	element_pairing(ver3, k2, ret_setup.generators[1]);
-	// The other verification check is same as 1st verification check of key, so to unnecessary increase time complexity, it is not done again
+
+	// The other verification check here is EXACTLY THE SAME as 1st verification check of key (in TEST 1)
+	// It is done in main function just after enroll function returns
+	// If it passes there, it will pass here. If it fails there, we will know at that point only (as TEST 1 is conducted before call to sign function). 
+	// As this code is for demonstration, to unnecessary increase time complexity of the program, it is not done again
+
 	// element_printf("ver1-final: %B\nver3-final: %B\n",ver1, ver3);
 
+	// ver1 and ver3 should match for success of the verification
 	if (element_cmp(ver1, ver3) == 0) {
+		// Verification successful
 		printf("-----------------Verification of initial signature successful------------------\n");
 	} else {
+		// Verification unsuccessful
 		printf("Verification of initial signature UNSUCCESSFUL\n");
 	}
+	// Generate random numbers t1, t2, t3, t4 belonging to Zn
 	mpz_urandomm(t1, state, ret_setup.n);
 	mpz_urandomm(t2, state, ret_setup.n);
 	mpz_urandomm(t3, state, ret_setup.n);
 	mpz_urandomm(t4, state, ret_setup.n);
 
+	// Print t1, t2, t3, t4, s in debug mode
 	#ifdef DEBUG
 		gmp_printf("t1, t2, t3, t4, s: %Zd, %Zd, %Zd, %Zd, %Zd\n", t1, t2, t3, t4, s);
 	#endif
 
+	// Declare, initialize some elements of group (G1/GT)
 	element_t h, temp;
+	// sigma1, sigma2, sigma3, sigma4 belong to group G1
 	element_init_G1(sigma1, ret_setup.pairing);
 	element_init_G1(sigma2, ret_setup.pairing);
 	element_init_G1(sigma3, ret_setup.pairing);
 	element_init_G1(sigma4, ret_setup.pairing);
+
+	// h is the generator of cyclic subgroup of G of order q.
+	// Initialize it with pairing as an element of group G1
 	element_init_G1(h, ret_setup.pairing);
+
+	// Initialize temp variable with pairing
 	element_init_G1(temp, ret_setup.pairing);
 
+	// Set h to generator of cyclic subgroup of G of order q using ret_setup
 	element_set(h, ret_setup.gen_subgroup_q);
 
+	// Initialize sigma1 = k1 = theta1
 	element_set(sigma1, k1);
+	// Initialize sigma2 = k2 = theta2
 	element_set(sigma2, k2);
+	// Initialize sigma3 = theta3
 	element_set(sigma3, theta3);
+	// Initialize sigma4 = theta4
 	element_set(sigma4, theta4);
 
+	// Compute h^t1 & store in temp
 	element_pow_mpz(temp, h, t1);
+	// Set sigma1 = temp*sigma1 = (h^t1) * current value of sigma1
 	element_mul(sigma1, temp, sigma1);
 
+	// Compute h^t2 and store in temp
 	element_pow_mpz(temp, h, t2);
+	// Set sigma2 = temp*sigma2 = (h^t2)*current value of sigma2
 	element_mul(sigma2, temp, sigma2);
 	
+	// Compute h^t3 and store in temp
 	element_pow_mpz(temp, h, t3);
+	// Set sigma3 = temp*sigma3 = (h^t3)*current value of sigma3
 	element_mul(sigma3, temp, sigma3);
 	
+	// Compute h^t4 and store in temp
 	element_pow_mpz(temp, h, t4);
+	// Set sigma4 = temp*sigma4 = (h^t4)*current value of sigma4
 	element_mul(sigma4, temp, sigma4);
 
-	// gmp_printf("T = %Zd, %Zd, %Zd, %Zd\n", t1, t2, t3, t4);
-
+	// Additionally, we need to compute two group elements pi1, pi2 according to paper.
+	// We do so in the following part of the code
+	// Declare & Initialize some elements of group (G1/GT) using the pairing generated earlier
 	element_t theta1, theta2, u;
+	// pi1, pi2, theta1, theta2, u belong to group G1 (theta1, theta2 are computed earlier)
 	element_init_G1(pi1, ret_setup.pairing);
 	element_init_G1(pi2, ret_setup.pairing);
 	element_init_G1(theta1, ret_setup.pairing);
 	element_init_G1(theta2, ret_setup.pairing);
 	element_init_G1(u, ret_setup.pairing);
-	element_set(theta1, k1);
-	element_set(theta2, k2);
-	element_set(u, ret_setup.generators[1]);
-	mpz_mul(t_temp, t1, t2);
-	element_pow_mpz(h, h, t_temp);
-	element_pow_mpz(theta1, theta1,t2);
-	element_mul(theta2, theta2, ret_setup.B_Omega);
-	element_pow_mpz(theta2, theta2, t1);
-	element_mul(pi1, theta1, h);
-	element_mul(pi1, pi1, theta2);
-
-	element_pow_mpz(pi2, u, t2);
-	element_pow_mpz(u, ret_setup.generators[0], t3);
-	element_invert(u, u);
-	element_mul(pi2, pi2, u);
-	element_pow_mpz(val1, val1, t4);
-	element_invert(val1, val1);
-	element_mul(pi2, pi2, val1);
-
-
 	
+	// Assign value k1 to theta1 as theta1 = k1
+	element_set(theta1, k1);
+	// Assign value k2 to theta2 as theta2 = k2
+	element_set(theta2, k2);
+
+	// u is the second generator of bilinear group G of order n
+	element_set(u, ret_setup.generators[1]);
+
+	// Compute & set t_temp = t1*t2
+	mpz_mul(t_temp, t1, t2);
+	// Compute h^t_temp = h^(t1*t2) & store in h
+	element_pow_mpz(h, h, t_temp);
+
+	// Compute theta1^t2 & store in theta1 only
+	element_pow_mpz(theta1, theta1,t2);
+	// Compute theta2*Ω & store in theta2 only
+	element_mul(theta2, theta2, ret_setup.B_Omega);
+	// Compute (original theta2*Ω)^t1 i.e. (current value of variable theta2)^t1
+	element_pow_mpz(theta2, theta2, t1);
+
+	// Compute pi1 = (current value of variable theta1)*(current value of variable h) [Refer above comments to know current values of the variables]
+	element_mul(pi1, theta1, h);
+	// Compute pi1 = (current value of pi1)*(current value of variable theta2)
+	element_mul(pi1, pi1, theta2);
+	// pi1 is ready. It is equal to 
+	// [(original h, generator of subgroup of G of order q)^(t1*t2)]*[(original theta1)^t2]*[(original theta2*Ω)^t1]
+
+	// Now, we compute pi2
+	// Set pi2 = u^t2
+	element_pow_mpz(pi2, u, t2);
+	// Assign u = g^t3 (g is first generator of group G)
+	element_pow_mpz(u, ret_setup.generators[0], t3);
+	// Compute inverse of current value of u (=g^t3) and store in variable u
+	element_invert(u, u);
+	// Compute pi2 = 
+	// [(original value of u i.e. the second generator of bilinear group G of order n)^t2]*(inverse of g^t3)
+	element_mul(pi2, pi2, u);
+
+	// Details on val1 - Multiply generators from 4th generator to (m+3)-th generator, each raised to power = message bit value. This value multiplied with v dash (3rd generator of bilinear group G) is stored in val1
+	// Compute val1 = val1^t4. 
+	element_pow_mpz(val1, val1, t4);
+	// Inverse current value of val1 and store in val1
+	element_invert(val1, val1);
+	// Compute pi2 = current value of pi2 * current (modified) value of val1
+	element_mul(pi2, pi2, val1);
+	// pi2 is computed as [(original value of u i.e. the second generator of bilinear group G of order n)^t2]*(inverse of g^t3)*[inverse(original value of val1 as defined by [REF-VAL-1] ^ t4)]
+	// Refer the paper for clear equation of pi1 & pi2
+
+	// The sign function has computed the signature = (sigma1, sigma2, sigma3, sigma4, pi1, pi2) & set the parameters so that this signature can be used by other functions
 }
+/*
+	verify function
+	It validates a given group signature σ on a given message M
+	If the group signature is validated successfully, the verifier outputs valid; otherwise, it outputs invalid.
+*/
 void verify(element_t Aval, element_t sigma1, element_t sigma2, element_t sigma3, element_t sigma4, element_t pi1, element_t pi2, char* message) {
 
+	// Declare & intialize group elements using the pairing generated earlier
 	element_t Acopy, val1, val2, pairing_result1, pairing_result2, T1, T2;
-	element_init_G1(val2, ret_setup.pairing);
-	element_init_G1(val1, ret_setup.pairing);
-	element_init_GT(Acopy, ret_setup.pairing);
-	element_init_GT(pairing_result1, ret_setup.pairing);
-	element_init_GT(pairing_result2, ret_setup.pairing);
-	element_init_GT(T1, ret_setup.pairing);
-	element_init_GT(T2, ret_setup.pairing);
+	element_init_G1(val2, ret_setup.pairing); // val2 belongs to group G1
+	element_init_G1(val1, ret_setup.pairing); // val1 belongs to group G1
+	element_init_GT(Acopy, ret_setup.pairing); // Acopy belongs to group GT
+	element_init_GT(pairing_result1, ret_setup.pairing);	// pairing_result1 belongs to group GT
+	element_init_GT(pairing_result2, ret_setup.pairing);	// pairing_result2 belongs to group GT
+	element_init_GT(T1, ret_setup.pairing);	// T1 belongs to group GT
+	element_init_GT(T2, ret_setup.pairing);	// T2 belongs to group GT
 
+	// Set Acopy to the value of A (computed by setup, stored in ret_setup also, passed to verify by main function)
 	element_set(Acopy, Aval);
+	// Compute inverse of A (element of group G1) and assign to Acopy
 	element_invert(Acopy, Acopy);
-	element_mul(val1, sigma2, ret_setup.B_Omega);
-	element_pairing(T1, sigma1, val1);
-	element_mul(T1, T1, Acopy);
 
-	
-	
+	// Set val1 = sigma2*Ω
+	element_mul(val1, sigma2, ret_setup.B_Omega);
+	// Compute e(sigma1, val1 = sigma2* Ω), where e is bilinear map using element_pairing function (explained in [REF-35])
+	element_pairing(T1, sigma1, val1);
+	// Set T1 = Value of T1 set above * current value of Acopy
+	element_mul(T1, T1, Acopy); // Finally, T1 = (inverse of A)* e(sigma1, sigma2*Ω)
+
+	// set/initialize val2 = v dash (3rd generator of cyclic bilinear group G) stored in generators array	
 	element_set(val2, ret_setup.generators[2]);
+
+	// Declare & Initialize temp_pw (which belongs to G1) using the pairing generated earlier
 	element_t temp_pw;
 	element_init_G1(temp_pw, ret_setup.pairing);
+
+	// msg_val stores the current message bit in the loop below
 	mpz_t msg_val;
 	mpz_init(msg_val);
+
+	// We need to multiply generators from 4th generator to (m+3)-th generator, each raised to power = message bit value. This value multiplied with v dash is stored in val2
 	for (int i = 3; i < (3+mpz_get_ui(ret_setup.mval)); i++) {
+		// Store the current message bit
 		if (message[i-3] == '1') {
 			mpz_set_ui(msg_val,1);
 		} else {
 			mpz_set_ui(msg_val, 0);
 		}
-		
+		// Compute temp_pw = (current-generator) raised to power of current message bit value
 		element_pow_mpz(temp_pw, ret_setup.generators[i], msg_val);
+		// Compute val2=val2*(temp_pw) [Note that val2 was initialized with v dash (3rd generator of G)]
 		element_mul(val2, val2, temp_pw);
 	}
-	#ifdef DEBUG
-		element_printf("sigma4 %B\n", sigma4);
-	#endif
+
+	// e - bilinear map
+	// Compute e(sigma2, u) using pbc function element_pairing
 	element_pairing(T2, ret_setup.generators[1],sigma2);
+	// Compute e(sigma3, g) using pbc function element_pairing
 	element_pairing(pairing_result2, ret_setup.generators[0], sigma3);
 	
+	// Compute inverse of e(sigma3, g) stored in variable pairing_result2 & store the inverse in the same variable pairing_result2
 	element_invert(pairing_result2, pairing_result2);
-	element_mul(T2, T2, pairing_result2);
-	element_pairing(pairing_result2, sigma4, val2);
-	element_invert(pairing_result2, pairing_result2);	
+	// Compute T2 = e(sigma2, u)*(current value of pairing_result2) = (current value of T2)*(current value of pairing_result2)
 	element_mul(T2, T2, pairing_result2);
 
+	// Compute e(sigma4, val2) & overwrite pairing_result2 with this value
+	element_pairing(pairing_result2, sigma4, val2);
+	
+	// Compute inverse of pairing_result2's current value & store back in the same variable pairing_result2
+	element_invert(pairing_result2, pairing_result2);
+	// Compute T2 = (current value of T2)*(current value of pairing_result2)
+	element_mul(T2, T2, pairing_result2); // Final value of T2 = [e(sigma2, u)*inverse(e(sigma3,g))*inverse(e(sigma4, original value of val2))]
+
+	/*
+		-----------TEST 3-------------
+		We verify whether the signature is valid or not
+	*/
+	// Declare & Initialize GT group elements for usage in verification test
 	element_t T1_verify, T2_verify;
 	element_init_GT(T1_verify, ret_setup.pairing);
+	// Compute T1_verify as e((generator of subgroup of G of order q), pi1), where e is the bilinear map
 	element_pairing(T1_verify, ret_setup.gen_subgroup_q, pi1);
 	element_init_GT(T2_verify, ret_setup.pairing);
+	// Compute T2_verify as e((generator of subgroup of G of order q), pi2), where e is the bilinear map
 	element_pairing(T2_verify, ret_setup.gen_subgroup_q, pi2);
 
 	#ifdef DEBUG
 		element_printf("%B\n%B\n",T2, T2_verify);
 	#endif
 	
+	// Compare T1 & T1_verify and T2 & T2_verify
 	if (element_cmp(T1, T1_verify) == 0 && element_cmp(T2, T2_verify) == 0) {
+		// If both pairs match, verification is valid
 		printf("---------------------VERIFICATION VALID-------------------------\n");
 	} else {
+		// Otherwise, it is invalid
 		printf("VERIFICATION INVALID\n");
 	}
-
-
-
+	/*
+		Verify function does the task of validating a given group signature σ on a given message
+	*/
 }
+/*
+	trace function
+	It recovers the sid of the user, whose message's signature component (sigma2) is passed here, from a list of sids of all users in the group.
+	It requires the use of tracing key TK
+*/
 void trace(element_t sigma2, mpz_t* sids, unsigned long num_of_users) {
+	// Declare & Initialize elements of group G1 using the pairing generated earlier (available via ret_setup)
 	element_t sigma2_copy, val;
 	element_init_G1(sigma2_copy, ret_setup.pairing);
 	element_init_G1(val, ret_setup.pairing);
+	
+	// Copy the value of sigma2 to sigma2_copy variable
 	element_set(sigma2_copy, sigma2);
+	// Compute sigma2^(Tracing Key) and store in sigma2_copy variable
 	element_pow_mpz(sigma2_copy, sigma2_copy, ret_setup.tk);
+
+	/*
+		----------TEST 4----------
+		Test to check if a given sid is the identity to be recovered or not
+	*/
+
+	// Traverse the list of all SIDs and figure out the identity to be recovered
 	for (unsigned long i = 0; i < (num_of_users); i++) {
+		// Compute val = g^(current sid)
 		element_pow_mpz(val, ret_setup.generators[0], sids[i]);
+		// Compute val = (current value of val) ^ TK = (g^(current sid))^TK
 		element_pow_mpz(val, val, ret_setup.tk);
+
+		// Check the condition that val = sigma2^(Tracing Key) OR not
 		if (element_cmp(val, sigma2_copy) == 0) {
+			// If condition satisfied, then the SID used is the recovered identity
 			gmp_printf("----------------------------SID %Zd traced successfully--------------------------\n", sids[i]);
 		} else {
+			// Otherwise, the SID used is not the identity to be recovered
 			gmp_printf("----------------------------SID %Zd unsuccessful in passing trace test--------------------------\n", sids[i]);
 		}
 	}
+	/*
+		Trace function, thus does the task of tracing the identity of the signer using a component of signature, the tracing key & a list of SIDs of all users (along with public values)
+	*/
 }
 int main (int argc, char **argv) {
 
@@ -1045,14 +1318,14 @@ int main (int argc, char **argv) {
 	srand(time(NULL));
 	
 	/* 
-	[REF-6] security_parameter: 
+	+[REF-6] security_parameter: 
 		Declare the variable for storing the security parameter
 	
 	The following declaration declares an integer with the name security_parameter.
 	*/
 	mpz_t security_parameter;
 	/*
-	[REF-7] void mpz_init (mpz_t x):
+	+[REF-7] void mpz_init (mpz_t x):
 		Implemented by the GMP library, the function initializes the variable passed and sets its value to 0
 	
 	Pseudo code for self-implementation (instead of using mpz_init(mpz_t x)):
@@ -1063,7 +1336,7 @@ int main (int argc, char **argv) {
 	mpz_init(security_parameter);
 
 	/*
-	[REF-8] void mpz_set_ui (mpz_t rop, unsigned long int op):
+	+[REF-8] void mpz_set_ui (mpz_t rop, unsigned long int op):
 		Implemented by the GMP library, the function sets the first parameter to the value of second parameter op
 
 	Pseudo code for self-implementation (instead of using mpz_set_ui(mpz_t rop, unsigned long int op)):
@@ -1091,56 +1364,127 @@ int main (int argc, char **argv) {
 	*/
 
 	/*
-		ENROLL starts
+		Enroll(PP, MK, ID) from the research paper starts below
+		PP is the public values generated by setup. MK- Master Enrollment Key
+		ID- User ID,  0 ≤ ID < 2^k < p
+
+		Enroll creates a signing key for user ID - ID.
+
 	*/
-	//	Generate some user ID
+	/*	
+		We generate some random userIDs
+	*/
+	// declare, initialize variables required to achieve above tasks.
 	mpz_t random, userID;
 	mpz_init(random);
 	mpz_init(userID);
-	gmp_randstate_t state;
-	gmp_randinit_default(state);
-	gmp_randseed_ui(state, (rand()+1)*(rand()+1));
 
+	// Declare state 
+	gmp_randstate_t state; // gmp_randstate_t explained in detail in [REF-11]
+	// Initialize state
+	gmp_randinit_default(state); // gmp_randinit_default explained in detail in [REF-12]
+	// Set initial seed value to state. We pass seed as a random number defined as (random_number + 1)*(another-random-number) + 1. 1 was added to avoid seed = 0.
+	gmp_randseed_ui(state, (rand()+1)*(rand()+1)); // gmp_randseed_ui explained in detail in [REF-13]
+
+	// Below, we compute the UPPER LIMIT of the user ID , which is 2^k
 	mpz_t count, limit;
 	mpz_init(count);
 	mpz_init(limit);
+	// start upper limit with 1
 	mpz_set_ui(limit, 1);
+
+	// till k iterations continue
 	while(mpz_cmp(count, security_parameter)) {
-		mpz_mul_ui(limit, limit, 2);
-		mpz_add_ui(count, count, 1);
+		/*
+		+[REF-36] void mpz_mul_ui(mpz_t rop, mpz_t a, unsigned long int x)
+			Provided by gmp library, used for setting rop = a*x
+		*/
+		mpz_mul_ui(limit, limit, 2); // we do limit = limit*2
+		mpz_add_ui(count, count, 1); // add 1 to count so that loop runs for k times. (we have used k = security_parameter/lambda as only k = O(security_parameter) is the required condition)
 	}
 
-	// Generate users
-	unsigned long num_of_users = 10;
+	// Below, we generate 10 random user IDs to demonstrate the functionality
+	unsigned long num_of_users = 10; // num of users are 10
+
+	// Prepare an array (of size num_of_users) for storing secret unique value SID that will be generated by the function enroll
 	mpz_t* sids = (mpz_t*)malloc(sizeof(mpz_t)*num_of_users);
+
+
 	for (unsigned long i = 0; i < num_of_users;i++) {
 		element_t k1, k2, k3;
+
+		// Initialize all user IDs
 		mpz_init(sids[i]);
 		do {
+			// Generate a random userID within the UPPER LIMIT stored in variable limit
 			mpz_urandomm(userID, state, limit);	
+			/* 
+			Loop till the userID generated is NOT ZERO and userID generated is not equal to the value of p or q. mpz_cmp_ui is explained in [REF-14], mpz_cmp is explained in [REF-17]
+			*/
 		} while(mpz_cmp_ui(userID, 0) == 0 || mpz_cmp(userID, ret_setup.pval) == 0 || mpz_cmp(userID, ret_setup.qval) == 0);
+
+		/*
+		The function enroll enrolls the user with user ID and generates the signing key in the form of three values - k1, k2, k3. The function also assigns a secret unique value SID
+		*/
 		enroll(sids[i], userID, k1, k2, k3);
 	}
 
+	// WE NOW PICK ONE USER ID THAT WILL BE USED TO TRACE A USER LATER IN THE PROGRAM.
 	
-	
+	// k1, k2, k3 that will be generated by enroll function for the picked user ID
 	element_t k1, k2, k3;
+
+	// Print the User ID that will be used for tracing & demonstration.
 	gmp_printf("------------------Demonstrating for USERID - %Zd-----------------\n", userID);
+	
 	mpz_t sid;
 	mpz_init(sid);
+
+	/* 
+		Pass userID. 
+		Other parameters passed will be assigned suitable values by the enroll function.
+		Jump to enroll function body for details on it.
+	*/
 	enroll(sid, userID, k1, k2, k3);
+	/*
+		enroll function has assigned sid to user with user ID = userID
+		It has also assigned suitable values to k1, k2, k3
+	*/
 	
+	// Print the elements k1, k2, k3 (signing key) given to the user with the user ID picked (for demonstration) - userID
 	element_printf("K1: %B\nK2: %B\nK3: %B\n", k1, k2, k3);
 
+	/*
+		--------------TEST 1-------------
+		Below, we check that the signing key returned by enroll is WELL-FORMED or NOT
+	*/
+	// Declare and initialize variables with pairing generated earlier in the program
+	// Below, val4 belongs to group G1, val1,val2, val3 belongs to group GT
 	element_t val1, val2, val3, val4;
 	element_init_G1(val4, ret_setup.pairing);
 	element_init_GT(val1, ret_setup.pairing);
 	element_init_GT(val2, ret_setup.pairing);
 	element_init_GT(val3, ret_setup.pairing);
+
+	// Compute val1 = e(k2, u), where e is the bilinear map according to research paper
+	// Bilinear map can be called by using the function element_pairing (EXPLAINED in [REF-35])
 	element_pairing(val1, k2, ret_setup.generators[1]);
+
+	// Compute val2 = e(k3, g) where e is the bilinear map
 	element_pairing(val2, k3, ret_setup.generators[0]);
+	
+	// Compute val4 = k2*Ω. Multiplication is done using pre-defined function element_mul
+	/*
+	+[REF-39] void element_mul(element_t rop, element_t p, element_t q)
+		Provided by PBC library. Sets rop to p*q.
+		The function is used for multiplying elements of groups etc.
+	*/
 	element_mul(val4, k2, ret_setup.B_Omega);
+
+	// Compute val3 = e(k1, val4 = k2*Ω) where e is the bilinear map
 	element_pairing(val3, k1, val4);
+
+	// FOR DEBUG purpose while writing/testing code, avoid reading
 	#ifdef DEBUG
 		if (element_cmp(val1, val2) == 0) {
 			printf("SUCCESS - 1\n");
@@ -1149,50 +1493,93 @@ int main (int argc, char **argv) {
 			printf("SUCCESS - 2\n");
 		}
 	#endif
+
+	/* 
+		VERIFY WHETHER 
+		1. val1 = e(k2, u) is equal to val2 = e(k3, g)
+			AND
+		2. val3 = e(k1, k2*Ω) is equal to A computed by setup function
+	*/
 	if (element_cmp(val1, val2) == 0 && element_cmp(val3, ret_setup.Aval) == 0) {
+		// VERIFICATION SUCCEEDS
 		printf("--------------------Verification of key successful - key well formed by enroll()----------------------------\n");
 	} else {
+		// VERIFICATION FAILS
 		printf("Verification of key UNSUCCESSFUL - key not well formed by enroll()\n");
 	}
 	/*
 		ENROLL ends
 	*/
 	/*
-		SIGN STARTS
+		SIGN(PP, ID, KID, M)  STARTS
+		where PP = public values generated by setup (availabe in ret_setup)
+		ID = userID
+		KID = signing key (k1, k2, k3)
+		M = message to be signed
 	*/
+	// Create an array for storing message of size m = O(security_parameter)
+	// Message is a binary message with number of bits = m
 	char* msg = (char*)malloc(sizeof(char)*(1+mpz_get_ui(ret_setup.mval)));
 
+	// Generate bits in the message randomly
 	for (unsigned int i = 0; i < mpz_get_ui(ret_setup.mval); i++) {
+		// rand function provided by C standard library produces a random number
 		int b = rand()%2;
+		// If rand()%2 == 0 message bit is 0, otherwise it is 1
 		msg[i] = '1';
 		if (b == 0) {
 			msg[i] = '0';
 		}
 	}
-	msg[mpz_get_ui(ret_setup.mval)] = '\0';
+	// Set last character of message to '\0' (terminating character of string in C)
+	msg[mpz_get_ui(ret_setup.mval)] = '\0'; //mpz_get_ui() is explained in [REF-30]
+	
+	// Print message to console
 	printf("Message (m bits): %s\n", msg);
+
+	// Declare elements of groups to pass to sign function
 	element_t sigma1, sigma2, sigma3, sigma4, pi1, pi2;
+	/*
+		Sign requires as input - PP (available using ret_setup), k1, k2, k3, message and sets pi1, pi2, sigma1, sigma2, sigma3, sigma4 which forms the signature for message msg and user (k1, k2, k3 uniquely represents the user).
+		Please jump to function body for further details.
+	*/
 	sign(pi1, pi2,sigma1, sigma2, sigma3, sigma4, k1,k2,k3, msg);
 
-
+	/*
+		Print the final signature to the console
+	*/
 	element_printf("Final Signature:\nSigma1: %B\nSigma2: %B\nSigma3: %B\nSigma4: %B\nPi1: %B\nPi2: %B\n",sigma1, sigma2, sigma3, sigma4, pi1, pi2);
 	/*
 		SIGN ENDS
 	*/
 
 	/*
-		VERIFY STARTS
+		VERIFY(PP, M, σ) STARTS
+		where PP = public values computed by setup & stored in ret_setup, M = message & σ computed by sign function
+		Use: To validate a group signature σ on a message M
 	*/
-
+	// To verify function,
+	// Pass required information out of all public values - A
+	// Pass signature σ = (sigma1, sigma2, sigma3, sigma4, pi1, pi2)
+	// Pass message msg
+	// For more explanation on verify function, please jump to the function body
 	verify(ret_setup.Aval, sigma1, sigma2, sigma3, sigma4, pi1, pi2, msg);
-
 	/*
 		VERIFY ENDS
 	*/
 
+
 	/*
-		TRACE STARTS
+		TRACE(PP, TK, signature) STARTS, where PP = Public values computed by setup & stored in ret_setup
+		TK = group manager’s tracing key (available to TRACE function using ret_setup)
+		signature = signature assumed to pass the verification test for some message M, which is not needed here
+		The aim is to recover the identity of the signer.
+		The tracer outputs the recovered identity of the signer.
 	*/
+	// Only sigma2 out of the complete signature is required by the trace function
+	// We pass all sids and expect the trace function to recover the sid of the user whose message M's signature is passed to the function. We also pass num_of_users to help traverse array of user-IDs.
+	// We recall that the use of SID was stated to be tracing purpose only.
+	// For more details on trace function, please jump to the function body.
 	trace(sigma2, sids, num_of_users);
 	/*
 		TRACE ENDS
@@ -1203,9 +1590,8 @@ int main (int argc, char **argv) {
 }
 
 
-
 /*
 REFERENCES:
-- GMP Manual. [Online]. Available: https://gmplib.org/gmp-man-6.0.0a.pdf
-- 
+- GMP Manual. [Online]. Available: https://gmplib.org/gmp-man-6.0.0a.pdf (accessed May, 2020)
+- PBC Library Manual. [Online]. Available: https://crypto.stanford.edu/pbc/manual.html (accessed May, 2020)
 */
