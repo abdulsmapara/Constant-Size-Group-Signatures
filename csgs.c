@@ -32,23 +32,19 @@ CONCEPTS explained:
 	* Bilinearity: e(g^a, h^b) = e(g^b, h^a) = e(g,h)^(ab), where g,h are generators of group G1 & G2 respectively.
 	* Non-degenerate: If g,h are generator of G,H then e(g,h) is generator of GT
 
-INSTRUCTIONS to read the comments/description: 
+The comments/description should be read according to the following: 
 - Read the comments before the struct declared just after importing the libraries.
 - Read the comments just after the struct referred above
 - Jump to the main function and start reading the comments
-- Whenever a function call is made, jump to the function definition and read comments written just above & inside the function body
+- Whenever a function call is made, jump to the function body and read comments written just above & inside the function body
 - References are mentioned in the format [REF-<Number>]
-- IMPORTANT NOTE: Whenever a FUNCTION/DATA-TYPE is encountered for the first time according to the flow mentioned above, it is explained. For the next time, to avoid Duplicate explanation, I have not explained it again. If an explanation to FUNCTION/DATA-TYPE is required next time it is being read, please search it in index_of_references.txt (OR simply look at the end of this file), note the reference number & search the explanation of function/data-type by searching +[REF-<Number>].
+- IMPORTANT NOTE: Whenever a FUNCTION/DATA-TYPE is encountered for the first time according to the flow mentioned above, it is explained. For the next time, the Duplicate explanation is avoided. If an explanation to FUNCTION/DATA-TYPE is required next time it is being read, please search it in index_of_references.txt (OR simply look at the end of this file), note the reference number & search the explanation of function/data-type by searching +[REF-<Number>].
   For example, if I want to search for details on a function whose reference number is [REF-2], then I will search <Plus symbol '+'>[REF-2] in this file.
 [It took more effort to avoid duplicate explanation, than it would have taken by writing explanation again. Since, it was a good practice to avoid duplicate explanation, I have used such a technique.]
 - Preferably, set word wrap to ON in the text editor to avoid horizontal scrolling at certain places.
 
-ACKNOWLEDGEMENT:
-- I sincerely thank Dr. Syed Taqi Ali Sir who helped me during this mini-project & cleared all my doubts.
-Since, this was the first time I was implementing any research paper, and I was new in using the PBC library, it was a mammoth task in front of me. His motivation helped me complete the task.
-I would also like to thank my parents for their constant support.
-
-Following is the WORKING CODE (with comments & descriptions at suitable places) in C programming language for the Section "5.2 Core Construction" of the paper. The output for the code is present in the file output_large.txt (for large values) and output_small.txt (for small values)
+Following is the WORKING CODE (with comments & descriptions at suitable places) in C programming language for the Section "5.2 Core Construction" of the paper. The output for the code is present in the file output_large.txt (for large values) and output_small.txt (for small values).
+The code can be compiled using - 'gcc csgs.c -lpbc -lgmp' and can be executed using './a.out'
 */
 
 // Importing the required libraries
@@ -223,11 +219,26 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 		+[REF-15] void mpz_ui_pow_ui (mpz t rop, unsigned long int base, unsigned long int exp)
 			Function provided by gmp library to set rop to base^exp. According to the manual, 0^0 returns 1.
 		Pseudo code for self-implementation:
-			int rop
-			if base == 0 and exp == 0:
-				rop = 1
-			else:
-				rop = power(base, exp)
+			def power_helper(base, exp):
+				if base == 1:
+					return 1
+				else if base == 0:
+					return 0
+				else if exp == 0:
+					return 1
+				else:
+					save_num = base
+					p = power_helper(base, exp/2)
+					p = p*p
+					if exp%2 == 1:
+						p = p*save_num
+					return p
+			def power(base, exp):
+				int rop
+				if base == 0 and exp == 0:
+					rop = 1
+				else:
+					rop = power_helper(base, exp)
 		*/
 		/*
 		+[REF-30] unsigned long int mpz_get_ui (const mpz t op)
@@ -264,7 +275,7 @@ void random_prime_bits(mpz_t result, mpz_t n) {
 				About the argument reps: It controls how many such tests are done. Larger value of reps will reduce the chances of a composite being returned as probably prime.
 
 				The function (using Rabin-Miller primality testing algorithm) is also implemented on own (without using mpz_probab_prime_p) as follows -
-				[WARNING: The below function was tested as a part of another code, not this, so please consider the function below as a part of pseudo-code instead of working-code]
+
 			*/
 			// typedef enum{FALSE,TRUE} boolean;
 			// boolean isPrimeUtil(mpz_t num, mpz_t base_mpz){
@@ -874,21 +885,19 @@ void setup(setup_result* retval, mpz_t security_parameter) {
 		+[REF-32] unsigned long int mpz_gcd (mpz_t rop, const mpz_t op1, const mpz_t op2)
 			Provided by gmp library, it computes the greatest common divisor of op1 and op2 and stores the result obtained after computation to rop
 			Pseudo-code/Code for gcd implemented without function mpz_gcd is as follows-
-			// mpz_t a,b;
-			// mpz_init(a);
-			// mpz_init(b);
-			// gmp_scanf("%Zd",a);
-			// gmp_scanf("%Zd",b);
-			// mpz_t zero;
-			// mpz_init(zero);
-			// while (mpz_cmp(b,zero) > 0 ) {
-			// 	mpz_t r;
-			// 	mpz_init(r);
-			// 	mpz_mod(r, a, b);
-			// 	mpz_set(a, b);
-			// 	mpz_set(b, r);
-			// }
-			// gmp_printf("GCD OF a & b: %Zd\n",a);
+			void gcd_self(mpz_t gcd, mpz_t a, mpz_t b) {
+				mpz_t zero;
+				mpz_init(zero);
+				while (mpz_cmp(b,zero) > 0 ) {
+					mpz_t r;
+					mpz_init(r);
+					mpz_mod(r, a, b);
+					mpz_set(a, b);
+					mpz_set(b, r);
+				}
+				mpz_set(gcd, a);
+				
+			}			
 		*/
 
 		// Compute gcd of alpha, p and alpha, q
@@ -969,9 +978,8 @@ void enroll(mpz_t final_sid, mpz_t userID, element_t k1, element_t k2, element_t
 		   We know that 2^k < p (and q also, as no. of bits in q are greater than k).
 		   Hence sid assigned in 3. is always different than any sid assigned in 1. (sid in 1. < p & q, while sid in 3. > p & q)
 		   Moreover, num_user is unique for every user, so sid is uniquely generated in 3.
-		   <TODO>
 	*/
-	// Declare & Initialize variables sid to store sid, gcd to store gcd(sid + ω, n) 
+	// Declare & Initialize variables - sid to store sid, gcd to store gcd(sid + ω, n) 
 	mpz_t gcd, sid;
 	mpz_init(gcd);
 	mpz_init(sid);
@@ -1023,6 +1031,53 @@ void enroll(mpz_t final_sid, mpz_t userID, element_t k1, element_t k2, element_t
 	+[REF-38] int mpz_invert (mpz_t rop, const mpz_t op1, const mpz_t op2)
 		It computes the inverse of op1 modulo op2 and puts the result in rop. 
 		If the inverse exists, the return value is non-zero and rop will satisfy 0 < rop < |op2|. If an inverse doesn’t exist then the return value is zero and rop is undefined.
+
+		Pseudo code/code for mpz_invert (without library function mpz_invert):
+		void ExtendedEucledian(mpz_t rop,mpz_t a, mpz_t b) {
+			// rop = inverse(a) wrt modulo b
+			mpz_t r,r1,r2,q,s,t, s1, s2, t1,t2;
+			mpz_init(r);
+			mpz_init(t1);
+			mpz_init(t2);
+			mpz_init(s1);
+			mpz_init(s2);
+			mpz_init(r1);
+			mpz_init(r2);
+			mpz_init(q);
+			mpz_init(s);
+			mpz_init(t);
+			mpz_set(r1, a);
+			mpz_set(r2, b);
+			mpz_set_ui(t1, 0);
+			mpz_set_ui(s1, 1);
+			mpz_set_ui(t2 , 1);
+			mpz_set_ui(s2, 0);
+			while (mpz_cmp_ui(r2, 0) > 0) {
+				
+				mpz_tdiv_q(q,r1,r2);
+				mpz_t mul;
+				mpz_init(mul);
+				mpz_mul(mul, q, r2);
+				mpz_sub(r, r1, mul);
+				mpz_set(r1, r2);
+				mpz_set(r2 , r);
+				mpz_mul(mul, q, s2);
+				mpz_sub(s, s1, mul);
+				mpz_set(s1, s2);
+				mpz_set(s2, s);
+				mpz_mul(mul, q, t2);
+				mpz_sub(t, t1, mul);
+				mpz_set(t1, t2);
+				mpz_set(t2, t);
+			}
+			//gmp_printf("GCD = %Zd\n",r1);
+			//gmp_printf("%Zd\n",s1);
+			//gmp_printf("%Zd\n",t1);
+			
+			mpz_set(rop, s1);
+			//gmp_printf("%Zd\n",rop);
+		}
+
 	*/
 	// store inverse of sid + ω in variable inverse
 	assert(mpz_invert(inverse, sid, ret_setup.n));
